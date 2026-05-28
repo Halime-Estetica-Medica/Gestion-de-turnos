@@ -64,8 +64,18 @@ tr:hover td{background:#fdf9f7}
 .stat-label{font-size:11px;color:#a89890;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px}
 .stat-value{font-size:22px;font-weight:600;color:#2a1a16}
 .add-row{display:grid;grid-template-columns:100px 1fr 130px 110px;gap:10px;align-items:end}
+.btn-wa{background:#25d366;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:background 0.15s}
+.btn-wa:hover{background:#1ebe5d}
 .color-preset{display:inline-block;width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.12);cursor:pointer;margin:0 3px;vertical-align:middle;transition:transform 0.12s}
 .color-preset:hover{transform:scale(1.2)}
+.color-popup{position:fixed;background:#fff;border:1px solid #e0d8d2;border-radius:12px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,0.13);z-index:999;display:none;min-width:180px}
+.color-popup.open{display:block}
+.cp-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.cp-swatch{width:26px;height:26px;border-radius:6px;border:1.5px solid rgba(0,0,0,0.10);cursor:pointer;transition:transform 0.12s;flex-shrink:0}
+.cp-swatch:hover{transform:scale(1.15)}
+.cp-swatch.active{border:2px solid #555;transform:scale(1.1)}
+.cp-divider{border:none;border-top:1px solid #f0e8e4;margin:6px 0}
+.cp-spectrum{width:100%;height:24px;border-radius:6px;border:1px solid #e0d8d2;cursor:pointer;padding:0}
 /* autocomplete dropdown */
 .autocomplete-wrap{position:relative}
 .autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0d8d2;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px}
@@ -74,6 +84,12 @@ tr:hover td{background:#fdf9f7}
 .autocomplete-item .ac-tel{font-size:12px;color:#a89890}
 /* tel badge in turno */
 .tel-badge{font-size:12px;color:#a89890;font-weight:400;margin-left:6px}
+/* ── EDIT MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal-box{background:#fff;border-radius:16px;padding:1.5rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:500;color:#2a1a16;margin-bottom:1.2rem}
+.modal-siglas{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.modal-footer{display:flex;gap:8px;margin-top:1.2rem;justify-content:flex-end}
 @media(max-width:600px){
   .grid2{grid-template-columns:1fr}
   .add-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto}
@@ -82,6 +98,7 @@ tr:hover td{background:#fdf9f7}
   .filter-row{gap:6px}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -100,6 +117,7 @@ tr:hover td{background:#fdf9f7}
     <button class="tab" onclick="showTab('agenda',this)">Agenda</button>
     <button class="tab" onclick="showTab('clientes',this)">Clientes</button>
     <button class="tab" onclick="showTab('tratamientos',this)">Tratamientos</button>
+    <button class="tab" onclick="showTab('costos',this)">Costos del día</button>
   </div>
 
   <!-- NUEVO TURNO -->
@@ -142,6 +160,20 @@ tr:hover td{background:#fdf9f7}
             <span>Total</span>
             <span id="preview-total">$0</span>
           </div>
+          <div style="border-top:1px solid #e8e0db;margin-top:10px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="f-anticipo-check" onchange="toggleAnticipo()" style="width:16px;height:16px;cursor:pointer;accent-color:#b8877a">
+              <label for="f-anticipo-check" style="font-size:14px;cursor:pointer;color:#5a3800">Pagó anticipo</label>
+            </div>
+            <div id="f-anticipo-monto-wrap" style="display:none;display:flex;align-items:center;gap:6px">
+              <span style="font-size:13px;color:#a89890">$</span>
+              <input type="number" id="f-anticipo-monto" placeholder="0" min="0"
+                style="width:110px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+            </div>
+          </div>
+          <div id="f-saldo-wrap" style="display:none;margin-top:6px;text-align:right;font-size:13px;color:#a89890">
+            Saldo restante: <span id="f-saldo" style="font-weight:500;color:#b8877a"></span>
+          </div>
         </div>
       </div>
 
@@ -160,8 +192,8 @@ tr:hover td{background:#fdf9f7}
         <input type="text" id="filtro-cliente" placeholder="Buscar cliente..." oninput="renderAgenda()" style="flex:1;min-width:120px">
         <input type="date" id="filtro-fecha" onchange="renderAgenda()">
         <input type="text" id="filtro-sigla" placeholder="Sigla..." oninput="renderAgenda()" style="width:90px">
-        <button class="btn-secondary" onclick="limpiarFiltros()">Limpiar</button>
-        <button class="btn-secondary" onclick="exportarCSV()">↓ Exportar</button>
+        <button class="btn-secondary" onclick="limpiarFiltros()" style="color:#c0392b;border-color:#f0c0bc">Limpiar</button>
+        <button class="btn-secondary" onclick="exportarExcel()" style="color:#2d7a4a;border-color:#c0e8ce">↓ Exportar Excel</button>
       </div>
       <div id="agenda-container"></div>
     </div>
@@ -243,6 +275,162 @@ tr:hover td{background:#fdf9f7}
   </div>
 </div>
 
+<!-- COSTOS DEL DÍA -->
+  <div id="tab-costos" class="section">
+
+    <!-- Fecha del día -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Fecha del registro</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="field" style="flex:1;min-width:160px">
+          <label>Fecha</label>
+          <input type="date" id="co-fecha">
+        </div>
+        <div style="font-size:13px;color:#a89890;margin-top:18px">Los costos se guardan por fecha. Podés cambiar la fecha para ver o editar otro día.</div>
+      </div>
+    </div>
+
+    <!-- Operadora -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Operadora</div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div class="field">
+          <label>Hora de entrada</label>
+          <input type="time" id="co-entrada" oninput="calcCostos()">
+        </div>
+        <div class="field">
+          <label>Hora de salida</label>
+          <input type="time" id="co-salida" oninput="calcCostos()">
+        </div>
+      </div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div class="field">
+          <label>Precio por hora ($)</label>
+          <input type="number" id="co-precio-hora" placeholder="0" min="0" oninput="calcCostos()">
+        </div>
+        <div class="field">
+          <label>Redondeo ($)</label>
+          <input type="number" id="co-redondeo" placeholder="0" oninput="calcCostos()">
+        </div>
+      </div>
+      <div id="co-horas-info" style="font-size:13px;color:#a89890"></div>
+    </div>
+
+    <!-- Comida -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Comida</div>
+      <div class="field">
+        <label>Gasto en comida ($)</label>
+        <input type="number" id="co-comida" placeholder="0" min="0" oninput="calcCostos()">
+      </div>
+    </div>
+
+    <!-- Pulsos -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Pulsos</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="field">
+          <label>Pulsos inicio</label>
+          <input type="number" id="co-pulsos-inicio" placeholder="0" min="0" oninput="calcCostos()">
+        </div>
+        <div class="field">
+          <label>Pulsos cierre</label>
+          <input type="number" id="co-pulsos-cierre" placeholder="0" min="0" oninput="calcCostos()">
+        </div>
+        <div class="field">
+          <label>Precio pulso (USD)</label>
+          <input type="number" id="co-precio-pulso" placeholder="0.00" min="0" step="0.01" oninput="calcCostos()">
+        </div>
+        <div class="field">
+          <label>Valor del dólar ($)</label>
+          <input type="number" id="co-dolar" placeholder="0" min="0" oninput="calcCostos()">
+        </div>
+      </div>
+      <div style="font-size:13px;color:#a89890" id="co-pulsos-total-info"></div>
+    </div>
+
+    <!-- Resumen del día -->
+    <div class="card">
+      <div class="section-title">Resumen del día</div>
+      <div id="co-resumen">
+        <div style="text-align:center;color:#a89890;font-size:13px;padding:1rem">Completá los campos para ver el resumen.</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1.2rem">
+        <button class="btn-primary" onclick="guardarCostos()">✓ Guardar registro</button>
+        <button class="btn-secondary" onclick="limpiarCostos()">Limpiar</button>
+      </div>
+    </div>
+
+  </div>
+
+<!-- WA MODAL -->
+<div id="wa-modal" class="modal-overlay" style="display:none" onclick="cerrarWAModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:460px">
+    <div class="modal-title">Enviar mensaje por WhatsApp</div>
+    <div style="font-size:13px;color:#a89890;margin-bottom:10px">Editá el mensaje antes de enviarlo si querés.</div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Número de WhatsApp</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:13px;color:#5a3800;padding:9px 10px;background:#fdf9f7;border:1px solid #e0d8d2;border-radius:8px;white-space:nowrap">+54 9</span>
+        <input type="text" id="wa-numero" placeholder="1123456789" style="flex:1;padding:9px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:1.2rem">
+      <label>Mensaje</label>
+      <textarea id="wa-mensaje" style="min-height:120px;padding:9px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="cerrarWAModal()">Cancelar</button>
+      <button class="btn-wa" style="padding:9px 20px;font-size:14px" onclick="enviarWA()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Abrir WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="edit-modal" class="modal-overlay" style="display:none" onclick="cerrarModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">Editar turno</div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Nombre del cliente</label>
+      <input type="text" id="em-cliente">
+    </div>
+    <div class="grid2" style="margin-bottom:10px">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="em-fecha">
+      </div>
+      <div class="field">
+        <label>Hora</label>
+        <input type="time" id="em-hora">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Tratamientos</label>
+      <div id="em-siglas-btns" class="modal-siglas"></div>
+      <input type="hidden" id="em-siglas">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Notas</label>
+      <textarea id="em-notas" style="min-height:48px"></textarea>
+    </div>
+    <div id="em-preview" style="font-size:13px;color:#a89890;margin-bottom:4px"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarEdicion()">✓ Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLOR POPUP -->
+<div id="color-popup" class="color-popup">
+  <div class="cp-grid" id="cp-swatches"></div>
+  <hr class="cp-divider">
+  <input type="color" id="cp-spectrum" class="cp-spectrum" title="Color personalizado">
+</div>
+
 <script>
 let tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || [];
 let turnos       = JSON.parse(localStorage.getItem('halime_turnos')       || '[]');
@@ -253,6 +441,9 @@ function guardar(){
   localStorage.setItem('halime_turnos',       JSON.stringify(turnos));
   localStorage.setItem('halime_clientes',     JSON.stringify(clientes));
 }
+function guardarCostosData(){
+  localStorage.setItem('halime_costos', JSON.stringify(costos));
+}
 
 function showTab(t, btn){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
@@ -262,6 +453,7 @@ function showTab(t, btn){
   if(t==='agenda'){renderAgenda();renderStats();}
   if(t==='tratamientos'){renderTratamientos();}
   if(t==='clientes'){renderClientes();}
+  if(t==='costos'){calcCostos();}
 }
 
 function showAlert(msg, tipo='success'){
@@ -372,7 +564,31 @@ function calcularPreview(){
       <span class="price">${i.precio>0?'$'+i.precio.toLocaleString('es-AR'):'—'}</span>
     </div>`).join('');
   document.getElementById('preview-total').textContent='$'+total.toLocaleString('es-AR');
+  actualizarSaldo();
 }
+
+function toggleAnticipo(){
+  const check = document.getElementById('f-anticipo-check');
+  const wrap  = document.getElementById('f-anticipo-monto-wrap');
+  wrap.style.display = check.checked ? 'flex' : 'none';
+  actualizarSaldo();
+}
+
+function actualizarSaldo(){
+  const check = document.getElementById('f-anticipo-check');
+  const saldoWrap = document.getElementById('f-saldo-wrap');
+  if(!check || !check.checked){if(saldoWrap)saldoWrap.style.display='none';return;}
+  const total = parseFloat(document.getElementById('preview-total').textContent.replace(/[^0-9]/g,''))||0;
+  const anticipo = parseFloat(document.getElementById('f-anticipo-monto').value)||0;
+  const saldo = total - anticipo;
+  document.getElementById('f-saldo').textContent = '$'+saldo.toLocaleString('es-AR');
+  saldoWrap.style.display = 'block';
+}
+// bind anticipo monto input
+setTimeout(()=>{
+  const el=document.getElementById('f-anticipo-monto');
+  if(el) el.addEventListener('input', actualizarSaldo);
+},0);
 
 function toggleSigla(s){
   const el=document.getElementById('f-siglas');
@@ -408,11 +624,15 @@ function guardarTurno(){
   if(cDB) telefono=cDB.telefono||'';
 
   const {items,total}=calcularTurno(siglasTexto);
+  const anticipoCheck = document.getElementById('f-anticipo-check').checked;
+  const anticipoMonto = anticipoCheck ? (parseFloat(document.getElementById('f-anticipo-monto').value)||0) : 0;
   const turno={
     id:Date.now(), cliente, telefono,
     fecha, hora,
     siglas:siglasSerialized(parsearSiglas(siglasTexto)),
     notas:document.getElementById('f-notas').value.trim(),
+    anticipo: anticipoCheck,
+    anticipoMonto,
     creado:new Date().toISOString()
   };
   turnos.push(turno);
@@ -422,7 +642,10 @@ function guardarTurno(){
 }
 
 function limpiarFormulario(){
-  ['f-cliente','f-hora','f-notas'].forEach(id=>document.getElementById(id).value='');
+  ['f-cliente','f-hora','f-notas','f-anticipo-monto'].forEach(id=>document.getElementById(id).value='');
+  const ac=document.getElementById('f-anticipo-check');if(ac)ac.checked=false;
+  const aw=document.getElementById('f-anticipo-monto-wrap');if(aw)aw.style.display='none';
+  const sw=document.getElementById('f-saldo-wrap');if(sw)sw.style.display='none';
   document.getElementById('f-siglas').value='[]';
   document.getElementById('f-fecha').value=hoy();
   document.getElementById('preview-box').style.display='none';
@@ -464,14 +687,19 @@ function turnoCard(t){
         <div class="turno-cliente">${t.cliente}${tel?`<span class="tel-badge">${tel}</span>`:''}</div>
         <div class="turno-fecha">${fecha}${t.hora?' — '+t.hora:''}</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:6px;align-items:center">
         <span class="turno-total">$${total.toLocaleString('es-AR')}</span>
-        <button class="btn-danger" onclick="eliminarTurno(${t.id})">✕</button>
+        ${tel ? `<button class="btn-wa" onclick="abrirWA(${t.id})" title="Escribir por WhatsApp">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </button>` : ''}
+        <button class="btn-secondary btn-sm" onclick="abrirModal(${t.id})" title="Editar">✎</button>
+        <button class="btn-danger" onclick="eliminarTurno(${t.id})" title="Eliminar">✕</button>
       </div>
     </div>
     <div style="margin:6px 0">${badges}</div>
     <div style="font-size:12px;color:#a89890">${items.map(i=>`${i.sigla}: $${i.precio.toLocaleString('es-AR')}`).join(' · ')}</div>
     ${t.notas?`<div style="font-size:12px;color:#a89890;margin-top:5px;font-style:italic">${t.notas}</div>`:''}
+    ${t.anticipo?`<div style="margin-top:5px"><span style="background:#e8f5e9;color:#2d7a4a;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500">Anticipo $${(t.anticipoMonto||0).toLocaleString('es-AR')}</span></div>`:''}
   </div>`;
 }
 
@@ -479,6 +707,140 @@ function eliminarTurno(id){
   if(!confirm('¿Eliminar este turno?'))return;
   turnos=turnos.filter(t=>t.id!==id);
   guardar();renderAgenda();renderStats();
+}
+
+let editId=null;
+
+function abrirModal(id){
+  const t=turnos.find(x=>x.id===id);
+  if(!t)return;
+  editId=id;
+  document.getElementById('em-cliente').value=t.cliente||'';
+  document.getElementById('em-fecha').value=t.fecha||'';
+  document.getElementById('em-hora').value=t.hora||'';
+  document.getElementById('em-notas').value=t.notas||'';
+  document.getElementById('em-siglas').value=t.siglas||'[]';
+  renderModalSiglas();
+  actualizarEmPreview();
+  document.getElementById('edit-modal').style.display='flex';
+}
+
+function cerrarModal(e){
+  if(e&&e.target!==document.getElementById('edit-modal'))return;
+  document.getElementById('edit-modal').style.display='none';
+  editId=null;
+}
+
+function renderModalSiglas(){
+  const seleccionadas=parsearSiglas(document.getElementById('em-siglas').value);
+  document.getElementById('em-siglas-btns').innerHTML=tratamientos.map(t=>{
+    const activo=seleccionadas.includes(t.sigla);
+    const color=t.color||'#f5ede9';
+    const dark=colorDark(color);
+    const esc=t.sigla.replace(/'/g,"\'");
+    const bgStyle=activo
+      ?`background:${dark};border-color:${dark};color:#fff`
+      :`background:${color};border-color:${color};color:${dark}`;
+    return `<span class="sigla-btn" style="${bgStyle};padding:7px 12px;font-size:12px;min-width:52px" onclick="toggleModalSigla('${esc}')">
+      <span style="font-weight:500">${t.sigla}</span>
+      <span class="sb-nombre" style="opacity:0.75">${t.nombre}</span>
+    </span>`;
+  }).join('');
+}
+
+function toggleModalSigla(s){
+  const el=document.getElementById('em-siglas');
+  let siglas=parsearSiglas(el.value);
+  siglas=siglas.includes(s)?siglas.filter(x=>x!==s):[...siglas,s];
+  el.value=siglasSerialized(siglas);
+  renderModalSiglas();
+  actualizarEmPreview();
+}
+
+function actualizarEmPreview(){
+  const siglas=document.getElementById('em-siglas').value;
+  const {items,total}=calcularTurno(siglas);
+  if(!items.length){document.getElementById('em-preview').textContent='';return;}
+  document.getElementById('em-preview').textContent=
+    items.map(i=>`${i.sigla}: $${i.precio.toLocaleString('es-AR')}`).join(' · ')
+    +' — Total: $'+total.toLocaleString('es-AR');
+}
+
+function guardarEdicion(){
+  const cliente=document.getElementById('em-cliente').value.trim();
+  const fecha=document.getElementById('em-fecha').value;
+  const hora=document.getElementById('em-hora').value;
+  const siglas=document.getElementById('em-siglas').value;
+  if(!cliente||!fecha){showAlert('Completá nombre y fecha.','error');return;}
+  if(hora){
+    const ocupado=turnos.find(t=>t.fecha===fecha&&t.hora===hora&&t.id!==editId);
+    if(ocupado){
+      showAlert(`⚠️ El horario ${hora}hs del ${fecha.split('-').reverse().join('/')} ya está ocupado con ${ocupado.cliente}.`,'error');
+      return;
+    }
+  }
+  const idx=turnos.findIndex(t=>t.id===editId);
+  if(idx===-1)return;
+  const cDB=clientes.find(c=>c.nombre.toLowerCase()===cliente.toLowerCase());
+  turnos[idx]={
+    ...turnos[idx],
+    cliente,
+    telefono:cDB?cDB.telefono||'':turnos[idx].telefono||'',
+    fecha, hora,
+    siglas,
+    notas:document.getElementById('em-notas').value.trim()
+  };
+  guardar();
+  document.getElementById('edit-modal').style.display='none';
+  editId=null;
+  renderAgenda();renderStats();
+  showAlert('✓ Turno actualizado');
+}
+
+function abrirWA(id){
+  const t = turnos.find(x=>x.id===id);
+  if(!t) return;
+  const tel = resolverTelefono(t);
+  const numero = tel.replace(/\D/g,'');
+  const fecha = t.fecha ? t.fecha.split('-').reverse().join('/') : '';
+  const hora = t.hora || '';
+  const siglas = parsearSiglas(t.siglas).join(', ');
+  const {total} = calcularTurno(t.siglas);
+
+  const mensaje = `Hola ${t.cliente}! 😊 Te recordamos tu turno en *HALIME*:
+
+` +
+    `📅 *Fecha:* ${fecha}
+` +
+    `🕐 *Hora:* ${hora}
+` +
+    `✨ *Tratamientos:* ${siglas}
+` +
+    `💰 *Total:* $${total.toLocaleString('es-AR')}` +
+    (t.anticipo && t.anticipoMonto ? `
+✅ *Anticipo pagado:* $${t.anticipoMonto.toLocaleString('es-AR')}
+💳 *Saldo:* $${(total-t.anticipoMonto).toLocaleString('es-AR')}` : '') +
+    `
+
+¡Te esperamos! 🌸`;
+
+  document.getElementById('wa-numero').value = numero;
+  document.getElementById('wa-mensaje').value = mensaje;
+  document.getElementById('wa-modal').style.display = 'flex';
+}
+
+function cerrarWAModal(e){
+  if(e && e.target !== document.getElementById('wa-modal')) return;
+  document.getElementById('wa-modal').style.display = 'none';
+}
+
+function enviarWA(){
+  const numero = document.getElementById('wa-numero').value.trim().replace(/\D/g,'');
+  const mensaje = document.getElementById('wa-mensaje').value.trim();
+  if(!numero){showAlert('Ingresá el número de WhatsApp.','error');return;}
+  const url = `https://wa.me/549${numero}?text=${encodeURIComponent(mensaje)}`;
+  window.open(url, '_blank');
+  document.getElementById('wa-modal').style.display = 'none';
 }
 
 function renderStats(){
@@ -498,19 +860,79 @@ function limpiarFiltros(){
   renderAgenda();
 }
 
-function exportarCSV(){
+function exportarExcel(){
   if(!turnos.length){showAlert('No hay turnos para exportar.','error');return;}
-  const rows=[['Cliente','Teléfono','Fecha','Hora','Siglas','Total','Notas']];
-  turnos.forEach(t=>{
-    const tel=resolverTelefono(t);
-    rows.push([t.cliente, tel, t.fecha, t.hora||'', parsearSiglas(t.siglas).join(' '), calcularTurno(t.siglas).total, t.notas||'']);
+  const wb = XLSX.utils.book_new();
+
+  // ── Hoja 1: Turnos ──
+  const turnosRows = [['Cliente','Teléfono','Fecha','Hora','Tratamientos','Anticipo','Monto anticipo','Total','Saldo','Notas']];
+  const turnosOrdenados = [...turnos].sort((a,b)=>(a.fecha+a.hora)>(b.fecha+b.hora)?1:-1);
+  turnosOrdenados.forEach(t=>{
+    const tel = resolverTelefono(t);
+    const {total} = calcularTurno(t.siglas);
+    const anticipo = t.anticipo ? 'Sí' : 'No';
+    const montoAnticipo = t.anticipo ? (t.anticipoMonto||0) : 0;
+    const saldo = t.anticipo ? total - montoAnticipo : total;
+    turnosRows.push([
+      t.cliente, tel,
+      t.fecha ? t.fecha.split('-').reverse().join('/') : '',
+      t.hora||'',
+      parsearSiglas(t.siglas).join(' '),
+      anticipo, montoAnticipo, total, saldo,
+      t.notas||''
+    ]);
   });
-  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='halime_turnos_'+hoy()+'.csv';
-  a.click();
+  const wsTurnos = XLSX.utils.aoa_to_sheet(turnosRows);
+  wsTurnos['!cols'] = [22,14,10,6,20,8,12,10,10,24].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, wsTurnos, 'Turnos');
+
+  // ── Hoja 2: Clientes ──
+  const clientesRows = [['Nombre','Teléfono','Email']];
+  [...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(c=>{
+    clientesRows.push([c.nombre, c.telefono||'', c.mail||'']);
+  });
+  const wsClientes = XLSX.utils.aoa_to_sheet(clientesRows);
+  wsClientes['!cols'] = [24,14,28].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, wsClientes, 'Clientes');
+
+  // ── Hoja 3: Tratamientos ──
+  const tratRows = [['Sigla','Tratamiento','Precio']];
+  tratamientos.forEach(t=>tratRows.push([t.sigla, t.nombre, t.precio]));
+  const wsTrat = XLSX.utils.aoa_to_sheet(tratRows);
+  wsTrat['!cols'] = [8,24,12].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, wsTrat, 'Tratamientos');
+
+  // ── Hoja 4: Costos ──
+  const costosRows = [['Fecha','Entrada','Salida','Hs trabajadas','Precio/hora','Operadora','Redondeo','Comida','Pulsos inicio','Pulsos cierre','Pulsos usados','Precio pulso (USD)','Dólar','Costo pulsos','Total costos']];
+  Object.keys(costos).sort().forEach(fecha=>{
+    const d = costos[fecha];
+    let hs = 0;
+    if(d.entrada && d.salida){
+      const [eh,em]=d.entrada.split(':').map(Number);
+      const [sh,sm]=d.salida.split(':').map(Number);
+      const min=(sh*60+sm)-(eh*60+em);
+      if(min>0) hs=Math.round(min/60*100)/100;
+    }
+    const operadora = hs*(d.precioHora||0)+(d.redondeo||0);
+    const pUsados = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
+    const costoPulsos = pUsados*(d.precioPulso||0)*(d.dolar||0);
+    const totalC = operadora+(d.comida||0)+costoPulsos;
+    costosRows.push([
+      fecha.split('-').reverse().join('/'),
+      d.entrada||'', d.salida||'', hs,
+      d.precioHora||0, operadora, d.redondeo||0,
+      d.comida||0,
+      d.pulsosInicio||0, d.pulsosCierre||0, pUsados,
+      d.precioPulso||0, d.dolar||0, costoPulsos,
+      totalC
+    ]);
+  });
+  const wsCostos = XLSX.utils.aoa_to_sheet(costosRows);
+  wsCostos['!cols'] = [10,8,8,10,12,10,10,10,12,12,12,14,10,12,12].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, wsCostos, 'Costos');
+
+  XLSX.writeFile(wb, 'halime_'+hoy()+'.xlsx');
+  showAlert('✓ Excel exportado con 4 hojas');
 }
 
 /* ── CLIENTES ── */
@@ -559,6 +981,88 @@ function eliminarCliente(nombre){
 }
 
 /* ── TRATAMIENTOS ── */
+const PRESETS=[
+  {hex:'#fce4ec',label:'Rosa'},
+  {hex:'#f8bbd0',label:'Rosa fuerte'},
+  {hex:'#e3f2fd',label:'Azul'},
+  {hex:'#bbdefb',label:'Azul fuerte'},
+  {hex:'#fff8e1',label:'Dorado'},
+  {hex:'#ffecb3',label:'Dorado fuerte'},
+  {hex:'#e8f5e9',label:'Verde'},
+  {hex:'#c8e6c9',label:'Verde fuerte'},
+  {hex:'#f3e5f5',label:'Lila'},
+  {hex:'#e1bee7',label:'Lila fuerte'},
+  {hex:'#ffe0b2',label:'Naranja'},
+  {hex:'#ffccbc',label:'Salmón'},
+  {hex:'#e0f2f1',label:'Menta'},
+  {hex:'#f5ede9',label:'Nude'},
+  {hex:'#eeeeee',label:'Gris'},
+  {hex:'#ffffff',label:'Blanco'},
+];
+
+let popupIdx=null;
+
+function abrirColorPopup(i, btn){
+  popupIdx=i;
+  const popup=document.getElementById('color-popup');
+  const color=tratamientos[i].color||'#f5ede9';
+
+  document.getElementById('cp-swatches').innerHTML=PRESETS.map(p=>`
+    <div class="cp-swatch${p.hex===color?' active':''}"
+      style="background:${p.hex}" title="${p.label}"
+      onclick="elegirColorPopup('${p.hex}')"></div>`).join('');
+
+  document.getElementById('cp-spectrum').value=color;
+  document.getElementById('cp-spectrum').onchange=function(){elegirColorPopup(this.value);};
+
+  // show offscreen to measure height
+  popup.style.visibility='hidden';
+  popup.style.top='0px';
+  popup.style.left='0px';
+  popup.classList.add('open');
+  const popH=popup.offsetHeight;
+  const popW=popup.offsetWidth;
+  popup.classList.remove('open');
+  popup.style.visibility='';
+
+  // use fixed positioning — rect coords are already viewport-relative
+  const rect=btn.getBoundingClientRect();
+  const spaceBelow=window.innerHeight-rect.bottom;
+  const spaceAbove=rect.top;
+
+  let top;
+  if(spaceBelow>=popH+8 || spaceBelow>=spaceAbove){
+    top=rect.bottom+6;
+  } else {
+    top=rect.top-popH-6;
+  }
+  top=Math.max(8, Math.min(top, window.innerHeight-popH-8));
+  const left=Math.max(8, Math.min(rect.left, window.innerWidth-popW-8));
+
+  popup.style.top=top+'px';
+  popup.style.left=left+'px';
+  popup.classList.add('open');
+}
+
+function elegirColorPopup(hex){
+  if(popupIdx===null)return;
+  tratamientos[popupIdx].color=hex;
+  guardar();renderTratamientos();renderSiglasButtons();
+  cerrarColorPopup();
+}
+
+function cerrarColorPopup(){
+  document.getElementById('color-popup').classList.remove('open');
+  popupIdx=null;
+}
+
+document.addEventListener('click', function(e){
+  const popup=document.getElementById('color-popup');
+  if(!popup.contains(e.target) && !e.target.closest('.color-trigger')){
+    cerrarColorPopup();
+  }
+});
+
 function renderTratamientos(){
   const tbody=document.getElementById('tbody-tratamientos');
   if(!tratamientos.length){
@@ -573,9 +1077,8 @@ function renderTratamientos(){
       <td>${t.nombre}</td>
       <td class="price">$${t.precio.toLocaleString('es-AR')}</td>
       <td style="text-align:center">
-        <input type="color" value="${color}" title="Cambiar color"
-          style="width:28px;height:28px;border:1px solid #e0d8d2;border-radius:6px;padding:2px;cursor:pointer;background:#fff"
-          onchange="cambiarColor(${i}, this.value)">
+        <div class="color-trigger" style="width:28px;height:28px;border-radius:6px;border:1.5px solid #e0d8d2;background:${color};cursor:pointer;display:inline-block"
+          onclick="abrirColorPopup(${i}, this)" title="Cambiar color"></div>
       </td>
       <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
         <button class="btn-secondary btn-sm" onclick="editarTratamiento(${i})">Editar precio</button>
@@ -627,10 +1130,132 @@ function eliminarTratamiento(i){
   guardar();renderTratamientos();
 }
 
+/* ── COSTOS ── */
+let costos = JSON.parse(localStorage.getItem('halime_costos') || '{}');
+
+function initCostos(){
+  document.getElementById('co-fecha').value = hoy();
+  cargarCostosDia(hoy());
+  calcCostos();
+  document.getElementById('co-fecha').addEventListener('change', function(){
+    cargarCostosDia(this.value);
+    calcCostos();
+  });
+}
+
+
+function cargarCostosDia(fecha){
+  const d = costos[fecha] || {};
+  document.getElementById('co-entrada').value = d.entrada||'';
+  document.getElementById('co-salida').value  = d.salida||'';
+  document.getElementById('co-precio-hora').value = d.precioHora||'';
+  document.getElementById('co-redondeo').value    = d.redondeo||'';
+  document.getElementById('co-comida').value       = d.comida||'';
+  document.getElementById('co-pulsos-inicio').value = d.pulsosInicio||'';
+  document.getElementById('co-pulsos-cierre').value = d.pulsosCierre||'';
+  document.getElementById('co-precio-pulso').value  = d.precioPulso||'';
+  document.getElementById('co-dolar').value          = d.dolar||'';
+}
+
+function calcCostos(){
+  const entrada = document.getElementById('co-entrada').value;
+  const salida  = document.getElementById('co-salida').value;
+  const precioHora = parseFloat(document.getElementById('co-precio-hora').value)||0;
+  const redondeo   = parseFloat(document.getElementById('co-redondeo').value)||0;
+  const comida     = parseFloat(document.getElementById('co-comida').value)||0;
+  const precioPulso= parseFloat(document.getElementById('co-precio-pulso').value)||0;
+  const dolar      = parseFloat(document.getElementById('co-dolar').value)||0;
+
+  // horas trabajadas
+  let horasTrabajadas = 0;
+  let horasStr = '';
+  if(entrada && salida){
+    const [eh,em] = entrada.split(':').map(Number);
+    const [sh,sm] = salida.split(':').map(Number);
+    const minutos = (sh*60+sm) - (eh*60+em);
+    if(minutos > 0){
+      horasTrabajadas = minutos/60;
+      const h = Math.floor(minutos/60);
+      const m = minutos%60;
+      horasStr = h+'h'+(m?' '+m+'min':'');
+    }
+  }
+  const costoOperadora = horasTrabajadas * precioHora + redondeo;
+  document.getElementById('co-horas-info').textContent =
+    horasStr ? `Horas trabajadas: ${horasStr} → $${(horasTrabajadas*precioHora).toLocaleString('es-AR')} + redondeo $${redondeo.toLocaleString('es-AR')} = $${costoOperadora.toLocaleString('es-AR')}` : '';
+
+  // pulsos
+  const pulsosInicio = parseInt(document.getElementById('co-pulsos-inicio').value)||0;
+  const pulsosCierre = parseInt(document.getElementById('co-pulsos-cierre').value)||0;
+  const totalPulsos  = Math.max(0, pulsosCierre - pulsosInicio);
+  const costoPulsosTotalPesos = totalPulsos * precioPulso * dolar;
+
+  const infoEl = document.getElementById('co-pulsos-total-info');
+  if(totalPulsos > 0 && precioPulso > 0 && dolar > 0){
+    infoEl.textContent = `Pulsos usados: ${totalPulsos} × USD ${precioPulso} × $${dolar.toLocaleString('es-AR')} = $${costoPulsosTotalPesos.toLocaleString('es-AR')}`;
+  } else if(pulsosInicio > 0 || pulsosCierre > 0) {
+    infoEl.textContent = totalPulsos > 0 ? `Pulsos usados: ${totalPulsos}` : 'El cierre debe ser mayor que el inicio.';
+  } else {
+    infoEl.textContent = '';
+  }
+
+  // resumen
+  const totalCostos = costoOperadora + comida + costoPulsosTotalPesos;
+  const resumen = document.getElementById('co-resumen');
+
+  const filas = [
+    {label:'Operadora ('+horasStr+')', valor: horasTrabajadas*precioHora},
+    {label:'Redondeo', valor: redondeo},
+    {label:'Comida', valor: comida},
+    {label:`Pulsos (${totalPulsos} usados: ${pulsosInicio}→${pulsosCierre})`, valor: costoPulsosTotalPesos},
+  ].filter(f => f.valor > 0);
+
+  if(!filas.length){
+    resumen.innerHTML='<div style="text-align:center;color:#a89890;font-size:13px;padding:1rem">Completá los campos para ver el resumen.</div>';
+    return;
+  }
+
+  resumen.innerHTML = filas.map(f=>`
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid #f2eeeb">
+      <span style="color:#5a3800">${f.label}</span>
+      <span style="font-weight:500">$${f.valor.toLocaleString('es-AR')}</span>
+    </div>`).join('') +
+    `<div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:17px;font-weight:500;color:#2a1a16;border-top:1px solid #e8e0db;margin-top:6px">
+      <span>Total costos del día</span>
+      <span>$${totalCostos.toLocaleString('es-AR')}</span>
+    </div>`;
+}
+
+function guardarCostos(){
+  const fecha = document.getElementById('co-fecha').value;
+  if(!fecha){showAlert('Elegí una fecha primero.','error');return;}
+  costos[fecha] = {
+    entrada:     document.getElementById('co-entrada').value,
+    salida:      document.getElementById('co-salida').value,
+    precioHora:  parseFloat(document.getElementById('co-precio-hora').value)||0,
+    redondeo:    parseFloat(document.getElementById('co-redondeo').value)||0,
+    comida:      parseFloat(document.getElementById('co-comida').value)||0,
+    pulsosInicio:parseInt(document.getElementById('co-pulsos-inicio').value)||0,
+    pulsosCierre:parseInt(document.getElementById('co-pulsos-cierre').value)||0,
+    precioPulso: parseFloat(document.getElementById('co-precio-pulso').value)||0,
+    dolar:       parseFloat(document.getElementById('co-dolar').value)||0,
+  };
+  guardarCostosData();
+  showAlert(`✓ Costos del ${fecha.split('-').reverse().join('/')} guardados`);
+}
+
+function limpiarCostos(){
+  ['co-entrada','co-salida','co-precio-hora','co-redondeo','co-comida','co-pulsos-inicio','co-pulsos-cierre','co-precio-pulso','co-dolar'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  calcCostos();
+}
+
 // Init
 renderTratamientos();
 document.getElementById('f-fecha').value=hoy();
 renderSiglasButtons();
+initCostos();
 </script>
 </body>
 </html>
