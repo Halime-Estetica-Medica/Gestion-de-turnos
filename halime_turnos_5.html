@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HALIME — Turnos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f4f2;color:#1a1a1a;min-height:100vh}
+.app{max-width:860px;margin:0 auto;padding:1.5rem 1rem}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:2rem;padding-bottom:1.2rem;border-bottom:1px solid #e8e0db}
+.logo{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#d4b896,#b8877a);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:#fff;flex-shrink:0;letter-spacing:1px}
+.header-text h1{font-size:21px;font-weight:600;letter-spacing:0.5px;color:#2a1a16}
+.header-text p{font-size:13px;color:#8a7a74;margin-top:2px}
+.tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:#ede8e4;padding:4px;border-radius:10px;width:fit-content;flex-wrap:wrap}
+.tab{padding:8px 18px;border-radius:7px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:#7a6a64;transition:all 0.15s}
+.tab.active{background:#fff;color:#2a1a16;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+.section{display:none}.section.active{display:block}
+.card{background:#fff;border:1px solid #ede8e4;border-radius:14px;padding:1.4rem}
+.card+.card{margin-top:1rem}
+.section-title{font-size:11px;font-weight:600;color:#a89890;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;color:#7a6a64;font-weight:500}
+.field input,.field textarea{padding:9px 11px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;background:#fff;color:#1a1a1a;font-family:inherit;transition:border-color 0.15s;outline:none}
+.field input:focus,.field textarea:focus{border-color:#b8877a}
+.field textarea{resize:vertical;min-height:56px}
+.btn-primary{background:#b8877a;color:#fff;border:none;padding:10px 22px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.15s}
+.btn-primary:hover{background:#a5766a}
+.btn-secondary{background:#fff;color:#6a5a54;border:1px solid #ddd5cf;padding:8px 16px;border-radius:9px;font-size:13px;cursor:pointer;transition:background 0.15s}
+.btn-secondary:hover{background:#f5f0ed}
+.btn-danger{background:#fff;color:#c0392b;border:1px solid #f0c0bc;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer}
+.btn-danger:hover{background:#fff5f4}
+.btn-sm{padding:6px 12px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11px;font-weight:600;color:#a89890;padding:8px 10px;border-bottom:1px solid #ede8e4;text-transform:uppercase;letter-spacing:0.4px}
+td{padding:11px 10px;border-bottom:1px solid #f2eeeb;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fdf9f7}
+.sigla-badge{background:#f5ede9;color:#7a4a40;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin:2px}
+.sigla-btn{background:#f5ede9;color:#7a4a40;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;flex-direction:column;align-items:center;gap:3px;margin:4px;cursor:pointer;border:2px solid transparent;transition:all 0.15s;min-width:64px;text-align:center;user-select:none}
+.sigla-btn:hover{background:#ead9d4;border-color:#c9948a}
+.sigla-btn.selected{background:#b8877a;color:#fff;border-color:#a5766a}
+.sigla-btn .sb-nombre{font-size:10px;font-weight:400;opacity:0.8;white-space:nowrap}
+.price{font-weight:600;color:#2a1a16}
+.total-box{background:#fdf9f7;border:1px solid #ede8e4;border-radius:10px;padding:1rem;margin-top:1rem}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}
+.total-row.final{border-top:1px solid #e8e0db;margin-top:8px;padding-top:11px;font-weight:600;font-size:17px;color:#2a1a16}
+.turno-card{background:#fff;border:1px solid #ede8e4;border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:10px;transition:box-shadow 0.15s}
+.turno-card:hover{box-shadow:0 2px 10px rgba(0,0,0,0.06)}
+.turno-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.turno-cliente{font-size:15px;font-weight:600;color:#2a1a16}
+.turno-fecha{font-size:12px;color:#a89890;margin-top:2px}
+.turno-total{font-size:15px;font-weight:600;color:#b8877a}
+.no-data{text-align:center;padding:2.5rem;color:#a89890;font-size:14px}
+.alert{padding:11px 16px;border-radius:9px;font-size:13px;margin-bottom:1rem;font-weight:500}
+.alert-success{background:#edf7f0;color:#2d7a4a;border:1px solid #c0e8ce}
+.alert-error{background:#fdf0ef;color:#c0392b;border:1px solid #f0c0bc}
+.filter-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.filter-row input{padding:8px 11px;border:1px solid #e0d8d2;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit;outline:none}
+.filter-row input:focus{border-color:#b8877a}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1rem}
+.stat-card{background:#fff;border:1px solid #ede8e4;border-radius:12px;padding:1rem 1.2rem}
+.stat-label{font-size:11px;color:#a89890;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px}
+.stat-value{font-size:22px;font-weight:600;color:#2a1a16}
+.add-row{display:grid;grid-template-columns:100px 1fr 130px 110px;gap:10px;align-items:end}
+.color-preset{display:inline-block;width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.12);cursor:pointer;margin:0 3px;vertical-align:middle;transition:transform 0.12s}
+.color-preset:hover{transform:scale(1.2)}
+/* autocomplete dropdown */
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0d8d2;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px}
+.autocomplete-item{padding:9px 12px;cursor:pointer;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.autocomplete-item:hover{background:#fdf9f7}
+.autocomplete-item .ac-tel{font-size:12px;color:#a89890}
+/* tel badge in turno */
+.tel-badge{font-size:12px;color:#a89890;font-weight:400;margin-left:6px}
+@media(max-width:600px){
+  .grid2{grid-template-columns:1fr}
+  .add-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto}
+  .add-row .btn-primary{grid-column:1/-1}
+  .tabs .tab{padding:7px 11px;font-size:12px}
+  .filter-row{gap:6px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">H</div>
+    <div class="header-text">
+      <h1>HALIME</h1>
+      <p>Sistema de gestión de turnos</p>
+    </div>
+  </div>
+
+  <div id="alert-container"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('nuevo',this)">＋ Nuevo turno</button>
+    <button class="tab" onclick="showTab('agenda',this)">Agenda</button>
+    <button class="tab" onclick="showTab('clientes',this)">Clientes</button>
+    <button class="tab" onclick="showTab('tratamientos',this)">Tratamientos</button>
+  </div>
+
+  <!-- NUEVO TURNO -->
+  <div id="tab-nuevo" class="section active">
+    <div class="card">
+      <div class="section-title">Datos del turno</div>
+
+      <!-- Nombre con autocomplete -->
+      <div class="field autocomplete-wrap" style="margin-bottom:12px">
+        <label>Nombre del cliente</label>
+        <input type="text" id="f-cliente" placeholder="Ej: María López" oninput="onClienteInput()" onblur="cerrarAC()" autocomplete="off">
+        <div id="ac-lista" class="autocomplete-list" style="display:none"></div>
+      </div>
+
+      <div class="grid2" style="margin-bottom:12px">
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="f-fecha">
+        </div>
+        <div class="field">
+          <label>Hora</label>
+          <input type="time" id="f-hora">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label>Tratamientos</label>
+        <div id="siglas-sugeridas" style="margin-top:6px"></div>
+        <input type="hidden" id="f-siglas">
+      </div>
+      <div class="field" style="margin-bottom:1.2rem">
+        <label>Notas</label>
+        <textarea id="f-notas" placeholder="Observaciones del turno..."></textarea>
+      </div>
+
+      <div id="preview-box" style="display:none">
+        <div class="section-title">Detalle</div>
+        <div class="total-box">
+          <div id="preview-detalle"></div>
+          <div class="total-row final">
+            <span>Total</span>
+            <span id="preview-total">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:1.2rem">
+        <button class="btn-primary" onclick="guardarTurno()">✓ Guardar turno</button>
+        <button class="btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENDA -->
+  <div id="tab-agenda" class="section">
+    <div class="stats-grid" id="stats-container"></div>
+    <div class="card">
+      <div class="filter-row">
+        <input type="text" id="filtro-cliente" placeholder="Buscar cliente..." oninput="renderAgenda()" style="flex:1;min-width:120px">
+        <input type="date" id="filtro-fecha" onchange="renderAgenda()">
+        <input type="text" id="filtro-sigla" placeholder="Sigla..." oninput="renderAgenda()" style="width:90px">
+        <button class="btn-secondary" onclick="limpiarFiltros()">Limpiar</button>
+        <button class="btn-secondary" onclick="exportarCSV()">↓ Exportar</button>
+      </div>
+      <div id="agenda-container"></div>
+    </div>
+  </div>
+
+  <!-- CLIENTES -->
+  <div id="tab-clientes" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Agregar cliente</div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div class="field">
+          <label>Nombre completo</label>
+          <input type="text" id="c-nombre" placeholder="Ej: Julieta Romero">
+        </div>
+        <div class="field">
+          <label>Teléfono</label>
+          <input type="text" id="c-telefono" placeholder="Ej: 1123456789">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Email (opcional)</label>
+        <input type="email" id="c-mail" placeholder="Ej: julieta@gmail.com">
+      </div>
+      <button class="btn-primary" onclick="agregarCliente()">+ Agregar</button>
+    </div>
+    <div class="card">
+      <div class="section-title">Lista de clientes</div>
+      <div class="filter-row" style="margin-bottom:1rem">
+        <input type="text" id="filtro-clientes-buscar" placeholder="Buscar..." oninput="renderClientes()" style="flex:1">
+      </div>
+      <table>
+        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th></th></tr></thead>
+        <tbody id="tbody-clientes"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TRATAMIENTOS -->
+  <div id="tab-tratamientos" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Agregar tratamiento</div>
+      <div style="display:grid;grid-template-columns:90px 1fr 120px auto auto;gap:10px;align-items:end">
+        <div class="field">
+          <label>Sigla</label>
+          <input type="text" id="t-sigla" placeholder="AX" style="text-transform:uppercase">
+        </div>
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" id="t-nombre" placeholder="Ej: Axilas completas">
+        </div>
+        <div class="field">
+          <label>Precio ($)</label>
+          <input type="number" id="t-precio" placeholder="12000" min="0">
+        </div>
+        <div class="field">
+          <label>Color</label>
+          <input type="color" id="t-color" value="#f5ede9" style="width:42px;height:38px;border:1px solid #e0d8d2;border-radius:8px;padding:3px;cursor:pointer;background:#fff">
+        </div>
+        <button class="btn-primary" onclick="agregarTratamiento()" style="height:38px;align-self:end;white-space:nowrap">+ Agregar</button>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:#a89890">
+        Colores sugeridos por categoría:
+        <span class="color-preset" onclick="setColor('#fce4ec')" style="background:#fce4ec" title="Rosa — zonas femeninas"></span>
+        <span class="color-preset" onclick="setColor('#e3f2fd')" style="background:#e3f2fd" title="Azul — zonas masculinas"></span>
+        <span class="color-preset" onclick="setColor('#fff8e1')" style="background:#fff8e1" title="Dorado — promos"></span>
+        <span class="color-preset" onclick="setColor('#e8f5e9')" style="background:#e8f5e9" title="Verde — paquetes"></span>
+        <span class="color-preset" onclick="setColor('#f3e5f5')" style="background:#f3e5f5" title="Lila — rostro"></span>
+        <span class="color-preset" onclick="setColor('#f5ede9')" style="background:#f5ede9" title="Nude — default"></span>
+        <span class="color-preset" onclick="setColor('#ffe0b2')" style="background:#ffe0b2" title="Naranja — especiales"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Tratamientos activos</div>
+      <table>
+        <thead><tr><th>Sigla</th><th>Tratamiento</th><th>Precio</th><th>Color</th><th></th></tr></thead>
+        <tbody id="tbody-tratamientos"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || [];
+let turnos       = JSON.parse(localStorage.getItem('halime_turnos')       || '[]');
+let clientes     = JSON.parse(localStorage.getItem('halime_clientes')     || '[]');
+
+function guardar(){
+  localStorage.setItem('halime_tratamientos', JSON.stringify(tratamientos));
+  localStorage.setItem('halime_turnos',       JSON.stringify(turnos));
+  localStorage.setItem('halime_clientes',     JSON.stringify(clientes));
+}
+
+function showTab(t, btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  btn.classList.add('active');
+  if(t==='agenda'){renderAgenda();renderStats();}
+  if(t==='tratamientos'){renderTratamientos();}
+  if(t==='clientes'){renderClientes();}
+}
+
+function showAlert(msg, tipo='success'){
+  const c=document.getElementById('alert-container');
+  c.innerHTML=`<div class="alert alert-${tipo}">${msg}</div>`;
+  setTimeout(()=>c.innerHTML='', 3500);
+}
+
+/* ── AUTOCOMPLETE CLIENTES ── */
+let acTimeout=null;
+function onClienteInput(){
+  clearTimeout(acTimeout);
+  acTimeout=setTimeout(()=>{
+    const val=document.getElementById('f-cliente').value.trim().toLowerCase();
+    // limpiar teléfono si el nombre cambió manualmente
+    document.getElementById('f-telefono').value='';
+    if(!val){cerrarAC();return;}
+    const matches=clientes.filter(c=>c.nombre.toLowerCase().includes(val));
+    if(!matches.length){cerrarAC();return;}
+    const lista=document.getElementById('ac-lista');
+    lista.style.display='block';
+    lista.innerHTML=matches.map(c=>`
+      <div class="autocomplete-item" onmousedown="seleccionarCliente('${escapar(c.nombre)}','${escapar(c.telefono)}')">
+        <span>${c.nombre}</span>
+        <span class="ac-tel">${c.telefono||''}</span>
+      </div>`).join('');
+  },120);
+}
+
+function escapar(s){ return (s||'').replace(/'/g,"\\'"); }
+
+function seleccionarCliente(nombre, tel){
+  document.getElementById('f-cliente').value=nombre;
+  cerrarAC();
+}
+
+function cerrarAC(){
+  // pequeño delay para que el mousedown se ejecute primero
+  setTimeout(()=>{
+    const l=document.getElementById('ac-lista');
+    if(l) l.style.display='none';
+  },150);
+}
+
+/* ── SIGLAS ── */
+function parsearSiglas(texto){
+  if(!texto||!texto.trim()) return [];
+  try{
+    const arr=JSON.parse(texto);
+    if(Array.isArray(arr)) return arr;
+  }catch(e){}
+  // fallback for legacy space-separated
+  return texto.toUpperCase().split(/[\s,+]+/).filter(s=>s.length>0);
+}
+
+function siglasSerialized(arr){
+  return JSON.stringify(arr);
+}
+
+function calcularTurno(siglasTexto){
+  const siglas=parsearSiglas(siglasTexto);
+  let items=[], total=0;
+  siglas.forEach(s=>{
+    const t=tratamientos.find(x=>x.sigla===s);
+    if(t){items.push({sigla:s,nombre:t.nombre,precio:t.precio});total+=t.precio;}
+    else if(s){items.push({sigla:s,nombre:'No encontrado',precio:0});}
+  });
+  return {items,total};
+}
+
+function colorDark(hex){
+  // darken hex color for text when selected
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.round(r*0.45)},${Math.round(g*0.45)},${Math.round(b*0.45)})`;
+}
+
+function renderSiglasButtons(){
+  const el=document.getElementById('f-siglas');
+  const seleccionadas=parsearSiglas(el.value);
+  const sugs=document.getElementById('siglas-sugeridas');
+  sugs.innerHTML=tratamientos.map(t=>{
+    const activo=seleccionadas.includes(t.sigla);
+    const esc=t.sigla.replace(/'/g,"\\'");
+    const color=t.color||'#f5ede9';
+    const dark=colorDark(color);
+    const bgStyle=activo
+      ? `background:${dark};border-color:${dark};color:#fff`
+      : `background:${color};border-color:${color};color:${dark}`;
+    return `<span class="sigla-btn" style="${bgStyle}" onclick="toggleSigla('${esc}')">
+      <span style="font-weight:500">${t.sigla}</span>
+      <span class="sb-nombre" style="opacity:0.75">${t.nombre}</span>
+    </span>`;
+  }).join('');
+}
+
+function calcularPreview(){
+  const texto=document.getElementById('f-siglas').value;
+  const box=document.getElementById('preview-box');
+  renderSiglasButtons();
+  if(!texto.trim()){box.style.display='none';return;}
+  const {items,total}=calcularTurno(texto);
+  box.style.display='block';
+  document.getElementById('preview-detalle').innerHTML=items.map(i=>`
+    <div class="total-row">
+      <span><span class="sigla-badge">${i.sigla}</span>&nbsp;${i.nombre}</span>
+      <span class="price">${i.precio>0?'$'+i.precio.toLocaleString('es-AR'):'—'}</span>
+    </div>`).join('');
+  document.getElementById('preview-total').textContent='$'+total.toLocaleString('es-AR');
+}
+
+function toggleSigla(s){
+  const el=document.getElementById('f-siglas');
+  let siglas=parsearSiglas(el.value);
+  if(siglas.includes(s)){
+    siglas=siglas.filter(x=>x!==s);
+  } else {
+    siglas.push(s);
+  }
+  el.value=siglasSerialized(siglas);
+  calcularPreview();
+}
+
+/* ── GUARDAR TURNO ── */
+function guardarTurno(){
+  const cliente=document.getElementById('f-cliente').value.trim();
+  const fecha=document.getElementById('f-fecha').value;
+  const hora=document.getElementById('f-hora').value;
+  const siglasTexto=document.getElementById('f-siglas').value.trim();
+  if(!cliente||!fecha||!siglasTexto){showAlert('Completá nombre, fecha y siglas.','error');return;}
+
+  if(hora){
+    const ocupado=turnos.find(t=>t.fecha===fecha&&t.hora===hora);
+    if(ocupado){
+      showAlert(`⚠️ El horario ${hora}hs del ${fecha.split('-').reverse().join('/')} ya está ocupado con ${ocupado.cliente}.`,'error');
+      return;
+    }
+  }
+
+  // buscar teléfono de la base de clientes
+  let telefono='';
+  const cDB=clientes.find(c=>c.nombre.toLowerCase()===cliente.toLowerCase());
+  if(cDB) telefono=cDB.telefono||'';
+
+  const {items,total}=calcularTurno(siglasTexto);
+  const turno={
+    id:Date.now(), cliente, telefono,
+    fecha, hora,
+    siglas:siglasSerialized(parsearSiglas(siglasTexto)),
+    notas:document.getElementById('f-notas').value.trim(),
+    creado:new Date().toISOString()
+  };
+  turnos.push(turno);
+  guardar();
+  showAlert(`✓ Turno de ${cliente} guardado — $${total.toLocaleString('es-AR')}`);
+  limpiarFormulario();
+}
+
+function limpiarFormulario(){
+  ['f-cliente','f-hora','f-notas'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-siglas').value='[]';
+  document.getElementById('f-fecha').value=hoy();
+  document.getElementById('preview-box').style.display='none';
+  cerrarAC();
+  renderSiglasButtons();
+}
+
+function hoy(){ return new Date().toISOString().split('T')[0]; }
+
+/* ── AGENDA ── */
+function renderAgenda(){
+  const fc=document.getElementById('filtro-cliente').value.toLowerCase();
+  const ff=document.getElementById('filtro-fecha').value;
+  const fs=document.getElementById('filtro-sigla').value.toUpperCase().trim();
+  let lista=[...turnos];
+  if(fc) lista=lista.filter(t=>t.cliente.toLowerCase().includes(fc));
+  if(ff) lista=lista.filter(t=>t.fecha===ff);
+  if(fs) lista=lista.filter(t=>parsearSiglas(t.siglas).includes(fs));
+  lista.sort((a,b)=>(a.fecha+a.hora)>(b.fecha+b.hora)?1:-1);
+  const c=document.getElementById('agenda-container');
+  if(!lista.length){c.innerHTML='<div class="no-data">Sin turnos que coincidan con los filtros</div>';return;}
+  c.innerHTML=lista.map(t=>turnoCard(t)).join('');
+}
+
+function resolverTelefono(t){
+  if(t.telefono) return t.telefono;
+  const cDB=clientes.find(c=>c.nombre.toLowerCase()===t.cliente.toLowerCase());
+  return cDB?cDB.telefono||'':'';
+}
+
+function turnoCard(t){
+  const badges=parsearSiglas(t.siglas).map(s=>`<span class="sigla-badge">${s}</span>`).join('');
+  const fecha=t.fecha?t.fecha.split('-').reverse().join('/'):'';
+  const {items,total}=calcularTurno(t.siglas);
+  const tel=resolverTelefono(t);
+  return `<div class="turno-card">
+    <div class="turno-header">
+      <div>
+        <div class="turno-cliente">${t.cliente}${tel?`<span class="tel-badge">${tel}</span>`:''}</div>
+        <div class="turno-fecha">${fecha}${t.hora?' — '+t.hora:''}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="turno-total">$${total.toLocaleString('es-AR')}</span>
+        <button class="btn-danger" onclick="eliminarTurno(${t.id})">✕</button>
+      </div>
+    </div>
+    <div style="margin:6px 0">${badges}</div>
+    <div style="font-size:12px;color:#a89890">${items.map(i=>`${i.sigla}: $${i.precio.toLocaleString('es-AR')}`).join(' · ')}</div>
+    ${t.notas?`<div style="font-size:12px;color:#a89890;margin-top:5px;font-style:italic">${t.notas}</div>`:''}
+  </div>`;
+}
+
+function eliminarTurno(id){
+  if(!confirm('¿Eliminar este turno?'))return;
+  turnos=turnos.filter(t=>t.id!==id);
+  guardar();renderAgenda();renderStats();
+}
+
+function renderStats(){
+  const h=hoy(), mes=h.slice(0,7);
+  const th=turnos.filter(t=>t.fecha===h);
+  const rh=th.reduce((s,t)=>s+calcularTurno(t.siglas).total,0);
+  const rm=turnos.filter(t=>t.fecha&&t.fecha.startsWith(mes)).reduce((s,t)=>s+calcularTurno(t.siglas).total,0);
+  document.getElementById('stats-container').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Turnos hoy</div><div class="stat-value">${th.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Recaudación hoy</div><div class="stat-value" style="font-size:16px">$${rh.toLocaleString('es-AR')}</div></div>
+    <div class="stat-card"><div class="stat-label">Total del mes</div><div class="stat-value" style="font-size:16px">$${rm.toLocaleString('es-AR')}</div></div>
+    <div class="stat-card"><div class="stat-label">Turnos totales</div><div class="stat-value">${turnos.length}</div></div>`;
+}
+
+function limpiarFiltros(){
+  ['filtro-cliente','filtro-fecha','filtro-sigla'].forEach(id=>document.getElementById(id).value='');
+  renderAgenda();
+}
+
+function exportarCSV(){
+  if(!turnos.length){showAlert('No hay turnos para exportar.','error');return;}
+  const rows=[['Cliente','Teléfono','Fecha','Hora','Siglas','Total','Notas']];
+  turnos.forEach(t=>{
+    const tel=resolverTelefono(t);
+    rows.push([t.cliente, tel, t.fecha, t.hora||'', parsearSiglas(t.siglas).join(' '), calcularTurno(t.siglas).total, t.notas||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='halime_turnos_'+hoy()+'.csv';
+  a.click();
+}
+
+/* ── CLIENTES ── */
+function renderClientes(){
+  const buscar=document.getElementById('filtro-clientes-buscar').value.toLowerCase();
+  const tbody=document.getElementById('tbody-clientes');
+  let lista=[...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  if(buscar) lista=lista.filter(c=>
+    c.nombre.toLowerCase().includes(buscar)||
+    (c.telefono||'').includes(buscar)||
+    (c.mail||'').toLowerCase().includes(buscar)
+  );
+  if(!lista.length){
+    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:#a89890;padding:1.5rem">${clientes.length?'Sin resultados':'No hay clientes todavía. Agregá el primero arriba.'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=lista.map(c=>`
+    <tr>
+      <td style="font-weight:500">${c.nombre}</td>
+      <td>${c.telefono||'—'}</td>
+      <td style="font-size:13px;color:#6a5a54">${c.mail||'—'}</td>
+      <td style="text-align:right">
+        <button class="btn-danger" onclick="eliminarCliente('${escapar(c.nombre)}')">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+function agregarCliente(){
+  const nombre=document.getElementById('c-nombre').value.trim();
+  const telefono=document.getElementById('c-telefono').value.trim();
+  const mail=document.getElementById('c-mail').value.trim();
+  if(!nombre){showAlert('Ingresá el nombre de la clienta.','error');return;}
+  if(clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){showAlert('Esa clienta ya existe.','error');return;}
+  clientes.push({nombre,telefono,mail});
+  guardar();renderClientes();
+  document.getElementById('c-nombre').value='';
+  document.getElementById('c-telefono').value='';
+  document.getElementById('c-mail').value='';
+  showAlert(`✓ ${nombre} agregada`);
+}
+
+function eliminarCliente(nombre){
+  if(!confirm(`¿Eliminar a ${nombre} de la lista?`))return;
+  clientes=clientes.filter(c=>c.nombre!==nombre);
+  guardar();renderClientes();
+}
+
+/* ── TRATAMIENTOS ── */
+function renderTratamientos(){
+  const tbody=document.getElementById('tbody-tratamientos');
+  if(!tratamientos.length){
+    tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;color:#a89890;padding:1.5rem">No hay tratamientos cargados.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=tratamientos.map((t,i)=>{
+    const color=t.color||'#f5ede9';
+    const dark=colorDark(color);
+    return `<tr>
+      <td><span class="sigla-badge" style="background:${color};color:${dark}">${t.sigla}</span></td>
+      <td>${t.nombre}</td>
+      <td class="price">$${t.precio.toLocaleString('es-AR')}</td>
+      <td style="text-align:center">
+        <input type="color" value="${color}" title="Cambiar color"
+          style="width:28px;height:28px;border:1px solid #e0d8d2;border-radius:6px;padding:2px;cursor:pointer;background:#fff"
+          onchange="cambiarColor(${i}, this.value)">
+      </td>
+      <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+        <button class="btn-secondary btn-sm" onclick="editarTratamiento(${i})">Editar precio</button>
+        <button class="btn-danger" onclick="eliminarTratamiento(${i})">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function agregarTratamiento(){
+  const sigla=document.getElementById('t-sigla').value.trim().toUpperCase();
+  const nombre=document.getElementById('t-nombre').value.trim();
+  const precio=parseInt(document.getElementById('t-precio').value)||0;
+  const color=document.getElementById('t-color').value||'#f5ede9';
+  if(!sigla||!nombre){showAlert('Completá sigla y nombre.','error');return;}
+  if(tratamientos.find(t=>t.sigla===sigla)){showAlert('Esa sigla ya existe.','error');return;}
+  tratamientos.push({sigla,nombre,precio,color});
+  guardar();renderTratamientos();renderSiglasButtons();
+  document.getElementById('t-sigla').value='';
+  document.getElementById('t-nombre').value='';
+  document.getElementById('t-precio').value='';
+  document.getElementById('t-color').value='#f5ede9';
+  showAlert(`✓ "${sigla} — ${nombre}" agregado`);
+}
+
+function setColor(hex){
+  document.getElementById('t-color').value=hex;
+}
+
+function cambiarColor(i, color){
+  tratamientos[i].color=color;
+  guardar();renderTratamientos();renderSiglasButtons();
+}
+
+function editarTratamiento(i){
+  const t=tratamientos[i];
+  const nuevo=prompt(`Nuevo precio para ${t.nombre} (${t.sigla})\nActual: $${t.precio.toLocaleString('es-AR')}`, t.precio);
+  if(nuevo===null)return;
+  const p=parseInt(nuevo);
+  if(isNaN(p)||p<0){showAlert('Precio inválido.','error');return;}
+  tratamientos[i].precio=p;
+  guardar();renderTratamientos();
+  showAlert(`✓ ${t.sigla} actualizado a $${p.toLocaleString('es-AR')}`);
+}
+
+function eliminarTratamiento(i){
+  if(!confirm(`¿Eliminar "${tratamientos[i].sigla} — ${tratamientos[i].nombre}"?`))return;
+  tratamientos.splice(i,1);
+  guardar();renderTratamientos();
+}
+
+// Init
+renderTratamientos();
+document.getElementById('f-fecha').value=hoy();
+renderSiglasButtons();
+</script>
+</body>
+</html>
