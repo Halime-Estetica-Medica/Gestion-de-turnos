@@ -593,19 +593,19 @@ function onClienteInput(){
   clearTimeout(acTimeout);
   acTimeout=setTimeout(()=>{
     const val=document.getElementById('f-cliente').value.trim().toLowerCase();
-    // limpiar teléfono si el nombre cambió manualmente
-    document.getElementById('f-telefono').value='';
-    if(!val){cerrarAC();return;}
-    const matches=clientes.filter(c=>c.nombre.toLowerCase().includes(val));
-    if(!matches.length){cerrarAC();return;}
     const lista=document.getElementById('ac-lista');
+    if(!val||val.length<1){lista.style.display='none';return;}
+    // reload clientes from storage in case they were added recently
+    const cList=JSON.parse(localStorage.getItem('halime_clientes')||'[]');
+    const matches=cList.filter(c=>c.nombre.toLowerCase().includes(val));
+    if(!matches.length){lista.style.display='none';return;}
     lista.style.display='block';
     lista.innerHTML=matches.map(c=>`
-      <div class="autocomplete-item" onmousedown="seleccionarCliente('${escapar(c.nombre)}','${escapar(c.telefono)}')">
+      <div class="autocomplete-item" onmousedown="seleccionarCliente('${escapar(c.nombre)}','${escapar(c.telefono||'')}')">
         <span>${c.nombre}</span>
         <span class="ac-tel">${c.telefono||''}</span>
       </div>`).join('');
-  },120);
+  },100);
 }
 
 function escapar(s){ return (s||'').replace(/'/g,"\\'"); }
