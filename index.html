@@ -463,7 +463,35 @@ tr:hover td{background:#fdf9f7}
 </div>
 
 <script>
-let tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || [];
+const DEFAULT_TRATAMIENTOS = [
+  {sigla:'BZ', nombre:'Bozo',              precio:9000,  color:'#fce4ec'},
+  {sigla:'MT', nombre:'Menton',            precio:9000,  color:'#fce4ec'},
+  {sigla:'MJ', nombre:'Mejillas',          precio:9000,  color:'#fce4ec'},
+  {sigla:'DP', nombre:'Dedos del Pie',     precio:9000,  color:'#fce4ec'},
+  {sigla:'CS', nombre:'Cavado Simple',     precio:10000, color:'#e3f2fd'},
+  {sigla:'AX', nombre:'Axilas',            precio:10000, color:'#e3f2fd'},
+  {sigla:'TC', nombre:'Tira de Cola',      precio:10000, color:'#e3f2fd'},
+  {sigla:'PV', nombre:'Pelvis',            precio:10000, color:'#e3f2fd'},
+  {sigla:'MP', nombre:'Media Pierna',      precio:17000, color:'#ff9800'},
+  {sigla:'PE', nombre:'Pierna Entera',     precio:27000, color:'#ff9800'},
+  {sigla:'AB', nombre:'Abdomen',           precio:13000, color:'#e8f5e9'},
+  {sigla:'MB', nombre:'Medio Brazo',       precio:13000, color:'#e8f5e9'},
+  {sigla:'RC', nombre:'Rostro Completo',   precio:13000, color:'#e8f5e9'},
+  {sigla:'BE', nombre:'Brazo Entero',      precio:18000, color:'#f3e5f5'},
+  {sigla:'GL', nombre:'Gluteos',           precio:18000, color:'#f3e5f5'},
+  {sigla:'CC', nombre:'Cavado Completo',   precio:18000, color:'#f3e5f5'},
+  {sigla:'P1', nombre:'Promo 1 (Bozo + TC + CC + AX)',          precio:26000, color:'#f44336'},
+  {sigla:'P2', nombre:'Promo 2 (Bozo + MP + TC + CC + AX)',     precio:42000, color:'#4caf50'},
+  {sigla:'P3', nombre:'Promo 3 (Bozo + PE + TC + CC + AX)',     precio:53000, color:'#2196f3'},
+  {sigla:'CE', nombre:'Cuerpo Entero (CC + AX + PE + BE + TC)', precio:67000, color:'#ffeb3b'},
+  {sigla:'MZH',nombre:'Micro Zonas Hombre',  precio:11000, color:'#00bcd4'},
+  {sigla:'ZCH',nombre:'Zonas Chicas Hombre', precio:12000, color:'#00bcd4'},
+  {sigla:'ZMH',nombre:'Zonas Medianas Hombre',precio:15000,color:'#00bcd4'},
+  {sigla:'ZGH',nombre:'Zonas Grandes Hombre',precio:21000,color:'#00bcd4'},
+  {sigla:'PEH',nombre:'Pierna Entera Hombre',precio:31000,color:'#00bcd4'},
+  {sigla:'PVH',nombre:'Pelvis Hombre',        precio:17000,color:'#00bcd4'},
+];
+let tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || DEFAULT_TRATAMIENTOS;
 let turnos       = JSON.parse(localStorage.getItem('halime_turnos')       || '[]');
 let clientes     = JSON.parse(localStorage.getItem('halime_clientes')     || '[]');
 
@@ -1373,11 +1401,9 @@ function initApp(){
   const ff=document.getElementById('fecha-fija');
   if(ff) ff.value=hoy();
   actualizarDisplayAnticipo();
-  // use rAF to ensure DOM is fully painted before rendering buttons
-  requestAnimationFrame(function(){
-    renderSiglasButtons();
-  });
   initCostos();
+  // pequeño delay para asegurar que el DOM esté completamente pintado
+  setTimeout(renderSiglasButtons, 50);
 }
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded', initApp);
