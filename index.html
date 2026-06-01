@@ -564,8 +564,10 @@ function colorDark(hex){
 }
 
 function renderSiglasButtons(){
+  // reload from localStorage every time in case it was updated
+  tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || tratamientos;
   const el=document.getElementById('f-siglas');
-  const seleccionadas=parsearSiglas(el.value);
+  const seleccionadas=el ? parsearSiglas(el.value) : [];
   const sugs=document.getElementById('siglas-sugeridas');
   if(!sugs) return;
   if(!tratamientos.length){
