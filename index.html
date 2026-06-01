@@ -402,7 +402,8 @@ tr:hover td{background:#fdf9f7}
       <label>Número de WhatsApp</label>
       <div style="display:flex;gap:8px;align-items:center">
         <span style="font-size:13px;color:#5a3800;padding:9px 10px;background:#fdf9f7;border:1px solid #e0d8d2;border-radius:8px;white-space:nowrap">+54 9</span>
-        <input type="text" id="wa-numero" placeholder="1123456789" style="flex:1;padding:9px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+        <input type="text" id="wa-numero" placeholder="Ej: 1123456789" style="flex:1;padding:9px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+        <div style="font-size:11px;color:#a89890;margin-top:4px">Ingresá solo el número sin código de país</div>
       </div>
     </div>
     <div class="field" style="margin-bottom:1.2rem">
@@ -876,7 +877,12 @@ function enviarWA(){
   const numero = document.getElementById('wa-numero').value.trim().replace(/\D/g,'');
   const mensaje = document.getElementById('wa-mensaje').value.trim();
   if(!numero){showAlert('Ingresá el número de WhatsApp.','error');return;}
-  const url = `https://wa.me/549${numero}?text=${encodeURIComponent(mensaje)}`;
+  // Normalize: strip leading 0, leading 54, leading 549
+  let num = numero.replace(/\D/g,'');
+  if(num.startsWith('549')) num = num.slice(3);
+  else if(num.startsWith('54')) num = num.slice(2);
+  else if(num.startsWith('0')) num = num.slice(1);
+  const url = `https://wa.me/549${num}?text=${encodeURIComponent(mensaje)}`;
   window.open(url, '_blank');
   document.getElementById('wa-modal').style.display = 'none';
 }
