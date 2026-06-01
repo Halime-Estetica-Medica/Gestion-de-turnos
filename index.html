@@ -56,6 +56,10 @@ tr:hover td{background:#fdf9f7}
 .alert{padding:11px 16px;border-radius:9px;font-size:13px;margin-bottom:1rem;font-weight:500}
 .alert-success{background:#edf7f0;color:#2d7a4a;border:1px solid #c0e8ce}
 .alert-error{background:#fdf0ef;color:#c0392b;border:1px solid #f0c0bc}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:14px 28px;border-radius:12px;font-size:15px;font-weight:600;box-shadow:0 4px 24px rgba(0,0,0,0.15);pointer-events:none;opacity:0;transition:opacity 0.2s}
+.toast.show{opacity:1}
+.toast-success{background:#2d7a4a;color:#fff}
+.toast-error{background:#c0392b;color:#fff}
 .filter-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
 .filter-row input{padding:8px 11px;border:1px solid #e0d8d2;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit;outline:none}
 .filter-row input:focus{border-color:#b8877a}
@@ -119,6 +123,7 @@ tr:hover td{background:#fdf9f7}
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+<div id="toast" class="toast"></div>
 <div class="app">
   <div class="header">
     <div class="logo">H</div>
@@ -518,9 +523,13 @@ function showTab(t, btn){
 }
 
 function showAlert(msg, tipo='success'){
-  const c=document.getElementById('alert-container');
-  c.innerHTML=`<div class="alert alert-${tipo}">${msg}</div>`;
-  setTimeout(()=>c.innerHTML='', 3500);
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className=`toast toast-${tipo} show`;
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.className='toast', 3000);
+  // also scroll to top so user sees it
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 /* ── AUTOCOMPLETE CLIENTES ── */
@@ -709,8 +718,8 @@ function guardarTurno(){
   };
   turnos.push(turno);
   guardar();
-  showAlert(`✓ Turno de ${cliente} guardado — $${total.toLocaleString('es-AR')}`);
   limpiarFormulario();
+  showAlert(`✓ Turno de ${cliente} guardado — $${total.toLocaleString('es-AR')}`);
 }
 
 function limpiarFormulario(){
