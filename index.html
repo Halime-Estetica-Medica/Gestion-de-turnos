@@ -173,7 +173,7 @@ tr:hover td{background:#fdf9f7}
       </div>
       <div class="field" style="margin-bottom:12px">
         <label>Tratamientos</label>
-        <div id="siglas-sugeridas" style="margin-top:6px"></div>
+        <div id="siglas-sugeridas" style="margin-top:6px;min-height:20px"></div>
         <input type="hidden" id="f-siglas">
       </div>
       <div class="field" style="margin-bottom:1.2rem">
@@ -481,6 +481,7 @@ function showTab(t, btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
   btn.classList.add('active');
+  if(t==='nuevo'){renderSiglasButtons();}
   if(t==='agenda'){renderAgenda();renderStats();}
   if(t==='tratamientos'){renderTratamientos();}
   if(t==='clientes'){renderClientes();}
@@ -1370,7 +1371,10 @@ function initApp(){
   const ff=document.getElementById('fecha-fija');
   if(ff) ff.value=hoy();
   actualizarDisplayAnticipo();
-  renderSiglasButtons();
+  // use rAF to ensure DOM is fully painted before rendering buttons
+  requestAnimationFrame(function(){
+    renderSiglasButtons();
+  });
   initCostos();
 }
 if(document.readyState==='loading'){
