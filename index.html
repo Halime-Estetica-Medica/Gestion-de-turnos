@@ -112,6 +112,20 @@ tr:hover td{background:#fdf9f7}
 .tb-edit-actions{display:flex;gap:4px;margin-top:2px}
 .tb-save{background:#b8877a;color:#fff;border:none;padding:3px 10px;border-radius:5px;font-size:11px;cursor:pointer}
 .tb-cancel{background:#eee;color:#555;border:none;padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer}
+.grilla-wrap{display:flex;flex-direction:column;gap:4px}
+.grilla-slot{display:flex;align-items:stretch;gap:8px;min-height:48px}
+.grilla-hora{width:52px;flex-shrink:0;font-size:12px;font-weight:600;color:#a89890;display:flex;align-items:center;justify-content:flex-end;padding-right:8px}
+.grilla-celda{flex:1;border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;transition:all 0.15s;border:1.5px solid #ede8e4;font-size:13px}
+.grilla-celda.libre{background:#fff;color:#c0b8b0;cursor:pointer}
+.grilla-celda.libre:hover{background:#fdf5f2;border-color:#d4b896}
+.grilla-celda.ocupado{background:#f5ede9;border-color:#d4a090;cursor:pointer}
+.grilla-celda.ocupado:hover{background:#f0e0da}
+.grilla-nombre{font-weight:600;font-size:14px;color:#2a1a16}
+.grilla-zonas{font-size:11px;color:#b8877a;margin-top:2px;font-weight:500}
+.grilla-total{font-size:12px;color:#a89890;margin-top:1px}
+.grilla-fecha-bar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
+.grilla-leyenda{display:flex;gap:12px;align-items:center;font-size:12px;color:#a89890;margin-left:auto}
+.leyenda-dot{width:12px;height:12px;border-radius:3px;display:inline-block}
 @media(max-width:600px){
   .grid2{grid-template-columns:1fr}
   .add-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto}
@@ -138,8 +152,9 @@ tr:hover td{background:#fdf9f7}
   <div class="tabs">
     <button class="tab active" onclick="showTab('nuevo',this)">＋ Nuevo turno</button>
     <button class="tab" onclick="showTab('agenda',this)">Agenda</button>
+    <button class="tab" onclick="showTab('grilla',this)">📅 Horarios</button>
     <button class="tab" onclick="showTab('clientes',this)">Clientes</button>
-    <button class="tab" onclick="showTab('tratamientos',this)">Tratamientos</button>
+    <button class="tab" onclick="showTab('zonas',this)">Zonas</button>
     <button class="tab" onclick="showTab('costos',this)">Costos del día</button>
   </div>
 
@@ -173,11 +188,33 @@ tr:hover td{background:#fdf9f7}
       </div>
 
       <div class="field" style="margin-bottom:12px">
-        <label>Hora</label>
-        <input type="time" id="f-hora">
+        <label>Hora del turno</label>
+        <div id="hora-slots" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
+        <input type="hidden" id="f-hora">
       </div>
+      <script>
+      (function(){
+        const slots=["09:00", "09:20", "09:40", "10:00", "10:20", "10:40", "11:00", "11:20", "11:40", "12:00", "12:20", "12:40", "13:00", "13:20", "13:40", "14:00", "14:20", "14:40", "15:00", "15:20", "15:40", "16:00", "16:20", "16:40", "17:00", "17:20", "17:40", "18:00"];
+        const cont=document.getElementById('hora-slots');
+        if(!cont)return;
+        slots.forEach(function(s){
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.textContent=s;
+          btn.style.cssText='padding:7px 12px;border-radius:8px;border:1.5px solid #e0d8d2;background:#fff;font-size:13px;font-weight:500;color:#5a3800;cursor:pointer;transition:all 0.12s;font-family:inherit';
+          btn.onclick=function(){
+            document.getElementById('f-hora').value=s;
+            cont.querySelectorAll('button').forEach(function(b){b.style.background='#fff';b.style.color='#5a3800';b.style.borderColor='#e0d8d2';});
+            btn.style.background='#b8877a';
+            btn.style.color='#fff';
+            btn.style.borderColor='#b8877a';
+          };
+          cont.appendChild(btn);
+        });
+      })();
+      </script>
       <div class="field" style="margin-bottom:12px">
-        <label>Tratamientos</label>
+        <label>Zonas</label>
         <div id="siglas-sugeridas" style="margin-top:6px;min-height:20px"></div>
         <input type="hidden" id="f-siglas">
       </div>
@@ -268,9 +305,9 @@ tr:hover td{background:#fdf9f7}
   </div>
 
   <!-- TRATAMIENTOS -->
-  <div id="tab-tratamientos" class="section">
+  <div id="tab-zonas" class="section">
     <div class="card" style="margin-bottom:1rem">
-      <div class="section-title">Agregar tratamiento</div>
+      <div class="section-title">Agregar zona</div>
       <div style="display:grid;grid-template-columns:90px 1fr 120px auto auto;gap:10px;align-items:end">
         <div class="field">
           <label>Sigla</label>
@@ -303,7 +340,7 @@ tr:hover td{background:#fdf9f7}
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-        <div class="section-title" style="margin-bottom:0">Tratamientos activos</div>
+        <div class="section-title" style="margin-bottom:0">Zonas activas</div>
         <span style="font-size:12px;color:#a89890">Arrastrá los bloques para reordenar · Doble click para editar</span>
       </div>
       <div id="trat-bloques" style="display:flex;flex-wrap:wrap;gap:8px;min-height:60px"></div>
@@ -426,6 +463,24 @@ tr:hover td{background:#fdf9f7}
   </div>
 </div>
 
+<!-- GRILLA HORARIOS -->
+  <div id="tab-grilla" class="section">
+    <div class="card">
+      <div class="grilla-fecha-bar">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-secondary" style="padding:6px 10px" onclick="cambiarDiaGrilla(-1)">◀</button>
+          <input type="date" id="grilla-fecha" onchange="renderGrilla()" style="padding:7px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+          <button class="btn-secondary" style="padding:6px 10px" onclick="cambiarDiaGrilla(1)">▶</button>
+        </div>
+        <div class="grilla-leyenda">
+          <span><span class="leyenda-dot" style="background:#f5ede9;border:1.5px solid #d4a090"></span> Ocupado</span>
+          <span><span class="leyenda-dot" style="background:#fff;border:1.5px solid #ede8e4"></span> Libre</span>
+        </div>
+      </div>
+      <div id="grilla-container" class="grilla-wrap"></div>
+    </div>
+  </div>
+
 <!-- EDIT MODAL -->
 <div id="edit-modal" class="modal-overlay" style="display:none" onclick="cerrarModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -445,7 +500,7 @@ tr:hover td{background:#fdf9f7}
       </div>
     </div>
     <div class="field" style="margin-bottom:10px">
-      <label>Tratamientos</label>
+      <label>Zonas</label>
       <div id="em-siglas-btns" class="modal-siglas"></div>
       <input type="hidden" id="em-siglas">
     </div>
@@ -516,8 +571,9 @@ function showTab(t, btn){
   document.getElementById('tab-'+t).classList.add('active');
   btn.classList.add('active');
   if(t==='nuevo'){renderSiglasButtons();}
+  if(t==='grilla'){renderGrilla();}
   if(t==='agenda'){renderAgenda();renderStats();}
-  if(t==='tratamientos'){renderTratamientos();}
+  if(t==='zonas'){renderTratamientos();}
   if(t==='clientes'){renderClientes();}
   if(t==='costos'){calcCostos();}
 }
@@ -608,7 +664,7 @@ function renderSiglasButtons(){
   const sugs=document.getElementById('siglas-sugeridas');
   if(!sugs) return;
   if(!tratamientos.length){
-    sugs.innerHTML='<div style="font-size:13px;color:#a89890;padding:4px">No hay tratamientos cargados. Agregá desde la solapa Tratamientos.</div>';
+    sugs.innerHTML='<div style="font-size:13px;color:#a89890;padding:4px">No hay zonas cargadas. Agregá desde la solapa Zonas.</div>';
     return;
   }
   sugs.innerHTML=tratamientos.map(t=>{
@@ -723,6 +779,9 @@ function guardarTurno(){
 
 function limpiarFormulario(){
   // limpiar campos de forma segura
+  // reset hora slots
+  const horaSlots=document.getElementById('hora-slots');
+  if(horaSlots) horaSlots.querySelectorAll('button').forEach(function(b){b.style.background='#fff';b.style.color='#5a3800';b.style.borderColor='#e0d8d2';});
   ['f-cliente','f-hora','f-notas'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value='';
@@ -1160,7 +1219,7 @@ document.addEventListener('click', function(e){
 function renderTratamientos(){
   const cont=document.getElementById('trat-bloques');
   if(!tratamientos.length){
-    cont.innerHTML='<div style="color:#a89890;font-size:14px;padding:1rem">No hay tratamientos cargados.</div>';
+    cont.innerHTML='<div style="color:#a89890;font-size:14px;padding:1rem">No hay zonas cargadas.</div>';
     return;
   }
   cont.innerHTML=tratamientos.map((t,i)=>{
@@ -1413,10 +1472,85 @@ function limpiarCostos(){
 }
 
 // Init
+/* ── GRILLA ── */
+const SLOTS_GRILLA = ["09:00","09:20","09:40","10:00","10:20","10:40","11:00","11:20","11:40","12:00","12:20","12:40","13:00","13:20","13:40","14:00","14:20","14:40","15:00","15:20","15:40","16:00","16:20","16:40","17:00","17:20","17:40","18:00"];
+
+function renderGrilla(){
+  const fecha = document.getElementById('grilla-fecha').value;
+  if(!fecha){document.getElementById('grilla-container').innerHTML='<div class="no-data">Elegí una fecha</div>';return;}
+
+  const turnosDia = turnos.filter(t=>t.fecha===fecha);
+  const porHora = {};
+  turnosDia.forEach(t=>{if(t.hora) porHora[t.hora]=t;});
+
+  const cont = document.getElementById('grilla-container');
+  cont.innerHTML = SLOTS_GRILLA.map(slot=>{
+    const t = porHora[slot];
+    if(t){
+      const siglas = parsearSiglas(t.siglas).join(' · ');
+      const {total} = calcularTurno(t.siglas);
+      const tel = resolverTelefono(t);
+      return `<div class="grilla-slot">
+        <div class="grilla-hora">${slot}</div>
+        <div class="grilla-celda ocupado" onclick="abrirModal(${t.id})">
+          <div class="grilla-nombre">${t.cliente}${tel?` <span style="font-size:11px;color:#a89890;font-weight:400">${tel}</span>`:''}</div>
+          <div class="grilla-zonas">${siglas}</div>
+          <div class="grilla-total">$${total.toLocaleString('es-AR')}${t.anticipo?` · Anticipo $${(t.anticipoMonto||0).toLocaleString('es-AR')}`:''}</div>
+        </div>
+      </div>`;
+    } else {
+      return `<div class="grilla-slot">
+        <div class="grilla-hora">${slot}</div>
+        <div class="grilla-celda libre" onclick="precargarHora('${slot}')">
+          <span style="font-size:12px">+ Libre</span>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+
+function cambiarDiaGrilla(delta){
+  const el = document.getElementById('grilla-fecha');
+  const d = el.value ? new Date(el.value+'T00:00:00') : new Date();
+  d.setDate(d.getDate()+delta);
+  el.value = d.toISOString().split('T')[0];
+  renderGrilla();
+}
+
+function precargarHora(slot){
+  // go to nuevo turno with that hora preselected
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-nuevo').classList.add('active');
+  document.querySelector('.tab').classList.add('active');
+  // set fecha and hora
+  const fecha = document.getElementById('grilla-fecha').value;
+  if(fecha) document.getElementById('fecha-fija').value=fecha;
+  document.getElementById('f-hora').value=slot;
+  // highlight the slot button
+  setTimeout(()=>{
+    const btns = document.getElementById('hora-slots').querySelectorAll('button');
+    btns.forEach(b=>{
+      if(b.textContent===slot){
+        b.style.background='#b8877a';
+        b.style.color='#fff';
+        b.style.borderColor='#b8877a';
+      } else {
+        b.style.background='#fff';
+        b.style.color='#5a3800';
+        b.style.borderColor='#e0d8d2';
+      }
+    });
+    renderSiglasButtons();
+  },50);
+}
+
 function initApp(){
   renderTratamientos();
   const ff=document.getElementById('fecha-fija');
   if(ff) ff.value=hoy();
+  const gf=document.getElementById('grilla-fecha');
+  if(gf) gf.value=hoy();
   actualizarDisplayAnticipo();
   initCostos();
   // pequeño delay para asegurar que el DOM esté completamente pintado
