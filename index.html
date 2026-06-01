@@ -524,12 +524,11 @@ function showTab(t, btn){
 
 function showAlert(msg, tipo='success'){
   const t=document.getElementById('toast');
+  if(!t) return;
   t.textContent=msg;
-  t.className=`toast toast-${tipo} show`;
+  t.className='toast toast-'+tipo+' show';
   clearTimeout(t._timer);
-  t._timer=setTimeout(()=>t.className='toast', 3000);
-  // also scroll to top so user sees it
-  window.scrollTo({top:0, behavior:'smooth'});
+  t._timer=setTimeout(()=>{t.className='toast';}, 3000);
 }
 
 /* ── AUTOCOMPLETE CLIENTES ── */
@@ -723,14 +722,22 @@ function guardarTurno(){
 }
 
 function limpiarFormulario(){
-  ['f-cliente','f-hora','f-notas','f-anticipo-monto'].forEach(id=>document.getElementById(id).value='');
-  const ac=document.getElementById('f-anticipo-check');if(ac)ac.checked=false;
-  const aw=document.getElementById('f-anticipo-monto-wrap');if(aw)aw.style.display='none';
-  const sw=document.getElementById('f-saldo-wrap');if(sw)sw.style.display='none';
-  document.getElementById('f-siglas').value='[]';
-  document.getElementById('fecha-fija').value=hoy();
-actualizarDisplayAnticipo();
-  document.getElementById('preview-box').style.display='none';
+  // limpiar campos de forma segura
+  ['f-cliente','f-hora','f-notas'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value='';
+  });
+  // reset anticipo checkbox
+  const ac=document.getElementById('f-anticipo-check');
+  if(ac) ac.checked=false;
+  const sw=document.getElementById('f-saldo-wrap');
+  if(sw) sw.style.display='none';
+  // reset siglas
+  const fs=document.getElementById('f-siglas');
+  if(fs) fs.value='[]';
+  // reset preview
+  const pb=document.getElementById('preview-box');
+  if(pb) pb.style.display='none';
   cerrarAC();
   renderSiglasButtons();
 }
