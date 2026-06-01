@@ -646,7 +646,9 @@ function guardarTurno(){
   const fecha=document.getElementById('fecha-fija').value;
   const hora=document.getElementById('f-hora').value;
   const siglasTexto=document.getElementById('f-siglas').value.trim();
-  if(!cliente||!fecha||!siglasTexto){showAlert('Completá nombre, fecha y siglas.','error');return;}
+  const siglasArr = parsearSiglas(siglasTexto);
+  if(!cliente||!fecha){showAlert('Completá nombre y fecha.','error');return;}
+  if(!siglasArr.length){showAlert('Seleccioná al menos un tratamiento.','error');return;}
 
   if(hora){
     const ocupado=turnos.find(t=>t.fecha===fecha&&t.hora===hora);
@@ -667,7 +669,7 @@ function guardarTurno(){
   const turno={
     id:Date.now(), cliente, telefono,
     fecha, hora,
-    siglas:siglasSerialized(parsearSiglas(siglasTexto)),
+    siglas:siglasSerialized(siglasArr),
     notas:document.getElementById('f-notas').value.trim(),
     anticipo: anticipoCheck,
     anticipoMonto,
@@ -1363,13 +1365,19 @@ function limpiarCostos(){
 }
 
 // Init
-document.addEventListener('DOMContentLoaded', function(){
+function initApp(){
   renderTratamientos();
-  document.getElementById('fecha-fija').value=hoy();
+  const ff=document.getElementById('fecha-fija');
+  if(ff) ff.value=hoy();
   actualizarDisplayAnticipo();
   renderSiglasButtons();
   initCostos();
-});
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 </script>
 </body>
 </html>
