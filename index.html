@@ -660,11 +660,20 @@ function siglasSerialized(arr){
 
 function calcularTurno(siglasTexto){
   const siglas=parsearSiglas(siglasTexto);
+  // count quantities
+  const conteo={};
+  siglas.forEach(s=>{ conteo[s]=(conteo[s]||0)+1; });
+  const unicas=Object.keys(conteo);
   let items=[], total=0;
-  siglas.forEach(s=>{
+  unicas.forEach(s=>{
     const t=tratamientos.find(x=>x.sigla===s);
-    if(t){items.push({sigla:s,nombre:t.nombre,precio:t.precio});total+=t.precio;}
-    else if(s){items.push({sigla:s,nombre:'No encontrado',precio:0});}
+    const qty=conteo[s]||1;
+    if(t){
+      items.push({sigla:s,nombre:t.nombre,precio:t.precio,qty});
+      total+=t.precio*qty;
+    } else if(s){
+      items.push({sigla:s,nombre:'No encontrado',precio:0,qty});
+    }
   });
   return {items,total};
 }
@@ -711,9 +720,19 @@ function calcularPreview(){
   const {items,total}=calcularTurno(texto);
   box.style.display='block';
   document.getElementById('preview-detalle').innerHTML=items.map(i=>`
-    <div class="total-row">
-      <span><span class="sigla-badge">${i.sigla}</span>&nbsp;${i.nombre}</span>
-      <span class="price">${i.precio>0?'$'+i.precio.toLocaleString('es-AR'):'—'}</span>
+    <div class="total-row" style="gap:8px">
+      <span style="display:flex;align-items:center;gap:6px;flex:1">
+        <span class="sigla-badge">${i.sigla}</span>
+        <span>${i.nombre}</span>
+      </span>
+      <span style="display:flex;align-items:center;gap:6px">
+        <button type="button" onclick="cambiarQty('${i.sigla}',-1)"
+          style="width:24px;height:24px;border-radius:50%;border:1px solid #e0d8d2;background:#fff;cursor:pointer;font-size:14px;line-height:1;color:#5a3800;display:flex;align-items:center;justify-content:center">−</button>
+        <span style="min-width:20px;text-align:center;font-weight:600">${i.qty>1?'×'+i.qty:''}</span>
+        <button type="button" onclick="cambiarQty('${i.sigla}',1)"
+          style="width:24px;height:24px;border-radius:50%;border:1px solid #e0d8d2;background:#fff;cursor:pointer;font-size:14px;line-height:1;color:#5a3800;display:flex;align-items:center;justify-content:center">+</button>
+        <span class="price" style="min-width:70px;text-align:right">${i.precio>0?'$'+(i.precio*i.qty).toLocaleString('es-AR'):'—'}</span>
+      </span>
     </div>`).join('');
   document.getElementById('preview-total').textContent='$'+total.toLocaleString('es-AR');
   actualizarSaldo();
@@ -771,6 +790,22 @@ setTimeout(()=>{
   const af=document.getElementById('anticipo-fijo');
   if(af) af.addEventListener('input',()=>{actualizarDisplayAnticipo();actualizarSaldo();});
 },0);
+
+function cambiarQty(sigla, delta){
+  const el=document.getElementById('f-siglas');
+  let siglas=parsearSiglas(el.value);
+  const count=siglas.filter(s=>s===sigla).length;
+  const newCount=Math.max(0, count+delta);
+  // remove all occurrences of this sigla
+  siglas=siglas.filter(s=>s!==sigla);
+  // add back newCount times
+  for(let i=0;i<newCount;i++) siglas.push(sigla);
+  el.value=siglasSerialized(siglas);
+  // if removed completely, deselect the block
+  calcularPreview();
+  // update block visual
+  renderSiglasButtons();
+}
 
 function toggleSigla(s){
   const el=document.getElementById('f-siglas');
