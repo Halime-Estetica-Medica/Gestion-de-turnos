@@ -528,7 +528,22 @@ tr:hover td{background:#fdf9f7}
       <label>Notas</label>
       <textarea id="em-notas" style="min-height:48px"></textarea>
     </div>
-    <div id="em-preview" style="font-size:13px;color:#a89890;margin-bottom:4px"></div>
+    <div id="em-preview" style="font-size:13px;color:#a89890;margin-bottom:10px"></div>
+    <!-- Anticipo en edición -->
+    <div style="background:#fdf9f7;border:1px solid #ede8e4;border-radius:10px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="em-anticipo-check" onchange="actualizarEmAnticipo()" style="width:16px;height:16px;cursor:pointer;accent-color:#b8877a">
+        <label for="em-anticipo-check" style="font-size:14px;cursor:pointer;color:#5a3800;font-weight:500">Pagó anticipo</label>
+      </div>
+      <div id="em-anticipo-wrap" style="display:none;align-items:center;gap:6px">
+        <span style="font-size:13px;color:#a89890">$</span>
+        <input type="number" id="em-anticipo-monto" placeholder="0" min="0" oninput="actualizarEmSaldo()"
+          style="width:110px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div id="em-saldo-wrap" style="display:none;font-size:13px;color:#a89890;margin-left:auto">
+        Saldo: <span id="em-saldo" style="font-weight:600;color:#b8877a"></span>
+      </div>
+    </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
       <button class="btn-primary" onclick="guardarEdicion()">✓ Guardar cambios</button>
@@ -845,13 +860,17 @@ function guardarTurno(){
   const {items,total}=calcularTurno(siglasTexto);
   const anticipoCheck = document.getElementById('f-anticipo-check').checked;
   const anticipoMonto = anticipoCheck ? (parseFloat(document.getElementById('anticipo-fijo').value)||0) : 0;
+  const promoCheck = document.getElementById('f-promo-check').checked;
+  const promoPct = promoCheck ? (parseFloat(document.getElementById('f-promo-pct').value)||0) : 0;
+  const totalConPromo = promoCheck ? Math.round(total * (1 - promoPct/100)) : total;
   const turno={
     id:Date.now(), cliente, telefono,
     fecha, hora,
     siglas:siglasSerialized(siglasArr),
     notas:document.getElementById('f-notas').value.trim(),
-    promo: document.getElementById('f-promo-check').checked,
-    promoPct: document.getElementById('f-promo-check').checked ? (parseFloat(document.getElementById('f-promo-pct').value)||0) : 0,
+    promo: promoCheck,
+    promoPct: promoPct,
+    totalFinal: totalConPromo,
     anticipo: anticipoCheck,
     anticipoMonto,
     creado:new Date().toISOString()
@@ -921,6 +940,7 @@ function turnoCard(t){
   const badges=parsearSiglas(t.siglas).map(s=>`<span class="sigla-badge">${s}</span>`).join('');
   const fecha=t.fecha?t.fecha.split('-').reverse().join('/'):'';
   const {items,total}=calcularTurno(t.siglas);
+  const totalMostrar = t.totalFinal !== undefined ? t.totalFinal : total;
   const tel=resolverTelefono(t);
   return `<div class="turno-card">
     <div class="turno-header">
@@ -929,7 +949,7 @@ function turnoCard(t){
         <div class="turno-fecha">${fecha}${t.hora?' — '+t.hora:''}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
-        <span class="turno-total">$${total.toLocaleString('es-AR')}</span>
+        <span class="turno-total">$${totalMostrar.toLocaleString('es-AR')}</span>
         ${tel ? `<button class="btn-wa" onclick="abrirWA(${t.id})" title="Escribir por WhatsApp">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         </button>` : ''}
@@ -962,6 +982,14 @@ function abrirModal(id){
   document.getElementById('em-hora').value=t.hora||'';
   document.getElementById('em-notas').value=t.notas||'';
   document.getElementById('em-siglas').value=t.siglas||'[]';
+  // anticipo
+  const emCheck=document.getElementById('em-anticipo-check');
+  const emWrap=document.getElementById('em-anticipo-wrap');
+  const emSaldoWrap=document.getElementById('em-saldo-wrap');
+  emCheck.checked=t.anticipo||false;
+  document.getElementById('em-anticipo-monto').value=t.anticipoMonto||0;
+  emWrap.style.display=t.anticipo?'flex':'none';
+  emSaldoWrap.style.display='none';
   renderModalSiglas();
   actualizarEmPreview();
   document.getElementById('edit-modal').style.display='flex';
@@ -999,6 +1027,27 @@ function toggleModalSigla(s){
   actualizarEmPreview();
 }
 
+function actualizarEmAnticipo(){
+  const check=document.getElementById('em-anticipo-check');
+  const wrap=document.getElementById('em-anticipo-wrap');
+  const saldoWrap=document.getElementById('em-saldo-wrap');
+  wrap.style.display=check.checked?'flex':'none';
+  if(!check.checked) saldoWrap.style.display='none';
+  actualizarEmSaldo();
+}
+
+function actualizarEmSaldo(){
+  const check=document.getElementById('em-anticipo-check');
+  const saldoWrap=document.getElementById('em-saldo-wrap');
+  if(!check||!check.checked){saldoWrap.style.display='none';return;}
+  const siglas=document.getElementById('em-siglas').value;
+  const {total}=calcularTurno(siglas);
+  const anticipo=parseFloat(document.getElementById('em-anticipo-monto').value)||0;
+  const saldo=total-anticipo;
+  document.getElementById('em-saldo').textContent='$'+saldo.toLocaleString('es-AR');
+  saldoWrap.style.display='block';
+}
+
 function actualizarEmPreview(){
   const siglas=document.getElementById('em-siglas').value;
   const {items,total}=calcularTurno(siglas);
@@ -1006,6 +1055,7 @@ function actualizarEmPreview(){
   document.getElementById('em-preview').textContent=
     items.map(i=>`${i.sigla}: $${i.precio.toLocaleString('es-AR')}`).join(' · ')
     +' — Total: $'+total.toLocaleString('es-AR');
+  actualizarEmSaldo();
 }
 
 function guardarEdicion(){
@@ -1030,7 +1080,9 @@ function guardarEdicion(){
     telefono:cDB?cDB.telefono||'':turnos[idx].telefono||'',
     fecha, hora,
     siglas,
-    notas:document.getElementById('em-notas').value.trim()
+    notas:document.getElementById('em-notas').value.trim(),
+    anticipo:document.getElementById('em-anticipo-check').checked,
+    anticipoMonto:document.getElementById('em-anticipo-check').checked?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0
   };
   guardar();
   document.getElementById('edit-modal').style.display='none';
@@ -1112,20 +1164,22 @@ function exportarExcel(){
   const wb = XLSX.utils.book_new();
 
   // ── Hoja 1: Turnos ──
-  const turnosRows = [['Cliente','Teléfono','Fecha','Hora','Tratamientos','Anticipo','Monto anticipo','Total','Saldo','Notas']];
+  const turnosRows = [['Cliente','Teléfono','Fecha','Hora','Zonas','Promo','Anticipo','Monto anticipo','Total','Saldo','Notas']];
   const turnosOrdenados = [...turnos].sort((a,b)=>(a.fecha+a.hora)>(b.fecha+b.hora)?1:-1);
   turnosOrdenados.forEach(t=>{
     const tel = resolverTelefono(t);
     const {total} = calcularTurno(t.siglas);
+    const totalFinal = t.totalFinal !== undefined ? t.totalFinal : total;
     const anticipo = t.anticipo ? 'Sí' : 'No';
     const montoAnticipo = t.anticipo ? (t.anticipoMonto||0) : 0;
-    const saldo = t.anticipo ? total - montoAnticipo : total;
+    const saldo = t.anticipo ? totalFinal - montoAnticipo : totalFinal;
+    const promoStr = t.promo ? t.promoPct+'%' : 'No';
     turnosRows.push([
       t.cliente, tel,
       t.fecha ? t.fecha.split('-').reverse().join('/') : '',
       t.hora||'',
       parsearSiglas(t.siglas).join(' '),
-      anticipo, montoAnticipo, total, saldo,
+      promoStr, anticipo, montoAnticipo, totalFinal, saldo,
       t.notas||''
     ]);
   });
