@@ -1217,26 +1217,14 @@ function abrirWA(id){
   const zonas = items.map(i=>i.qty>1 ? i.nombre+' x'+i.qty : i.nombre).join(', ');
   const totalMostrar = t.totalFinal !== undefined ? t.totalFinal : total;
 
-  const mensaje =
-    'Hola ' + t.cliente + '! Te recordamos tu turno en HALIME:
-
-' +
-    'Fecha: ' + fecha + '
-' +
-    'Hora: ' + hora + '
-' +
-    'Zonas: ' + zonas + '
-' +
-    'Total: $' + totalMostrar.toLocaleString('es-AR') +
-    (t.anticipo && t.anticipoMonto ?
-      '
-Anticipo pagado: $' + t.anticipoMonto.toLocaleString('es-AR') +
-      '
-Saldo: $' + (totalMostrar - t.anticipoMonto).toLocaleString('es-AR')
-      : '') +
-    '
-
-Te esperamos!';
+  const saldoStr = t.anticipo && t.anticipoMonto
+    ? 'A abonar: $' + (totalMostrar - t.anticipoMonto).toLocaleString('es-AR') + ' (anticipo abonado: $' + t.anticipoMonto.toLocaleString('es-AR') + ')'
+    : 'Total: $' + totalMostrar.toLocaleString('es-AR');
+  const mensaje = 'Hola ' + t.cliente + '! Te recordamos tu turno en HALIME:\n\n' +
+    'Fecha: ' + fecha + '\n' +
+    'Hora: ' + hora + '\n' +
+    'Zonas: ' + zonas + '\n' +
+    saldoStr + '\n\nTe esperamos!';
 
   document.getElementById('wa-numero').value = numero;
   document.getElementById('wa-mensaje').value = mensaje;
