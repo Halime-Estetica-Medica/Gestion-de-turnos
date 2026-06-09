@@ -1510,9 +1510,8 @@ function guardarBloque(i){
   const dup=tratamientos.find((t,idx)=>t.sigla===sigla&&idx!==i);
   if(dup){showAlert('Esa sigla ya existe en otro tratamiento.','error');return;}
   tratamientos[i]={...tratamientos[i],sigla,nombre,precio};
-  guardarTratamientosSB();
+  guardarTratamientosSB().then(()=>showAlert(`✓ ${sigla} actualizado`));
   renderTratamientos();renderSiglasButtons();
-  showAlert(`✓ ${sigla} actualizado`);
 }
 
 function agregarTratamiento(){
@@ -1539,7 +1538,8 @@ function setColor(hex){
 function cambiarColor(i, color){
   tratamientos[i].color=color;
   guardarTratamientosSB();
-  renderTratamientos();renderSiglasButtons();
+  renderTratamientos();
+  renderSiglasButtons();
 }
 
 function editarTratamiento(i){
@@ -1557,9 +1557,9 @@ function eliminarTratamiento(i){
   if(!confirm(`¿Eliminar "${tratamientos[i].sigla} — ${tratamientos[i].nombre}"?`))return;
   const siglaEliminada=tratamientos[i].sigla;
   tratamientos.splice(i,1);
-  eliminarTratamientoSB(siglaEliminada);
-  guardarTratamientosSB();
+  eliminarTratamientoSB(siglaEliminada).then(()=>guardarTratamientosSB());
   renderTratamientos();
+  renderSiglasButtons();
 }
 
 /* ── COSTOS ── */
