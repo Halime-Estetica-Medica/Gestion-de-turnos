@@ -1845,6 +1845,20 @@ function initApp(){
     renderSiglasButtons();
     renderClientes();
   });
+  // auto-refresh every 30 seconds
+  setInterval(()=>{
+    cargarDesdeSB().then(()=>{
+      renderTratamientos();
+      renderSiglasButtons();
+      renderClientes();
+      // refresh current tab view
+      const tabAgenda=document.getElementById('tab-agenda');
+      if(tabAgenda&&tabAgenda.classList.contains('active')){renderAgenda();renderStats();}
+      const tabGrilla=document.getElementById('tab-grilla');
+      if(tabGrilla&&tabGrilla.classList.contains('active')){renderGrilla();}
+      if(typeof window.renderHoraSlots==='function') window.renderHoraSlots();
+    });
+  }, 30000);
 }
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded', initApp);
