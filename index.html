@@ -59,6 +59,7 @@ tr:hover td{background:#fdf9f7}
 .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:14px 28px;border-radius:12px;font-size:15px;font-weight:600;box-shadow:0 4px 24px rgba(0,0,0,0.15);pointer-events:none;opacity:0;transition:opacity 0.2s}
 .toast.show{opacity:1}
 .toast-success{background:#2d7a4a;color:#fff}
+.toast-loading{background:#5a6a7a;color:#fff}
 .toast-error{background:#c0392b;color:#fff}
 .filter-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
 .filter-row input{padding:8px 11px;border:1px solid #e0d8d2;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit;outline:none}
@@ -618,14 +619,8 @@ let tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'nu
 let turnos       = JSON.parse(localStorage.getItem('halime_turnos')       || '[]');
 let clientes     = JSON.parse(localStorage.getItem('halime_clientes')     || '[]');
 
-function guardar(){
-  localStorage.setItem('halime_tratamientos', JSON.stringify(tratamientos));
-  localStorage.setItem('halime_turnos',       JSON.stringify(turnos));
-  localStorage.setItem('halime_clientes',     JSON.stringify(clientes));
-}
-function guardarCostosData(){
-  localStorage.setItem('halime_costos', JSON.stringify(costos));
-}
+function guardar(){ /* data saved directly to Supabase */ }
+function guardarCostosData(){ /* data saved directly to Supabase */ }
 
 function showTab(t, btn){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
@@ -1023,7 +1018,8 @@ function turnoCard(t){
 function eliminarTurno(id){
   if(!confirm('¿Eliminar este turno?'))return;
   turnos=turnos.filter(t=>t.id!==id);
-  guardar();renderAgenda();renderStats();
+  eliminarTurnoSB(id);
+  renderAgenda();renderStats();
 }
 
 let editId=null;
@@ -1139,11 +1135,12 @@ function guardarEdicion(){
     anticipo:document.getElementById('em-anticipo-check').checked,
     anticipoMonto:document.getElementById('em-anticipo-check').checked?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0
   };
-  guardar();
-  document.getElementById('edit-modal').style.display='none';
-  editId=null;
-  renderAgenda();renderStats();
-  showAlert('✓ Turno actualizado');
+  guardarTurnoSB(turnos[idx]).then(()=>{
+    document.getElementById('edit-modal').style.display='none';
+    editId=null;
+    renderAgenda();renderStats();
+    showAlert('✓ Turno actualizado');
+  });
 }
 
 function abrirWA(id){
@@ -1325,8 +1322,10 @@ function agregarCliente(){
   const mail=document.getElementById('c-mail').value.trim();
   if(!nombre){showAlert('Ingresá el nombre de la clienta.','error');return;}
   if(clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){showAlert('Esa clienta ya existe.','error');return;}
-  clientes.push({nombre,telefono,mail});
-  guardar();renderClientes();
+  const nuevoCliente={nombre,telefono,mail};
+  clientes.push(nuevoCliente);
+  guardarClienteSB(nuevoCliente);
+  renderClientes();
   document.getElementById('c-nombre').value='';
   document.getElementById('c-telefono').value='';
   document.getElementById('c-mail').value='';
@@ -1336,7 +1335,8 @@ function agregarCliente(){
 function eliminarCliente(nombre){
   if(!confirm(`¿Eliminar a ${nombre} de la lista?`))return;
   clientes=clientes.filter(c=>c.nombre!==nombre);
-  guardar();renderClientes();
+  eliminarClienteSB(nombre);
+  renderClientes();
 }
 
 /* ── TRATAMIENTOS ── */
@@ -1406,7 +1406,7 @@ function abrirColorPopup(i, btn){
 function elegirColorPopup(hex){
   if(popupIdx===null)return;
   tratamientos[popupIdx].color=hex;
-  guardar();renderTratamientos();renderSiglasButtons();
+  guardarTratamientosSB();renderTratamientos();renderSiglasButtons();
   cerrarColorPopup();
 }
 
@@ -1510,7 +1510,8 @@ function guardarBloque(i){
   const dup=tratamientos.find((t,idx)=>t.sigla===sigla&&idx!==i);
   if(dup){showAlert('Esa sigla ya existe en otro tratamiento.','error');return;}
   tratamientos[i]={...tratamientos[i],sigla,nombre,precio};
-  guardar();renderTratamientos();renderSiglasButtons();
+  guardarTratamientosSB();
+  renderTratamientos();renderSiglasButtons();
   showAlert(`✓ ${sigla} actualizado`);
 }
 
@@ -1522,7 +1523,8 @@ function agregarTratamiento(){
   if(!sigla||!nombre){showAlert('Completá sigla y nombre.','error');return;}
   if(tratamientos.find(t=>t.sigla===sigla)){showAlert('Esa sigla ya existe.','error');return;}
   tratamientos.push({sigla,nombre,precio,color});
-  guardar();renderTratamientos();renderSiglasButtons();
+  guardarTratamientosSB();
+  renderTratamientos();renderSiglasButtons();
   document.getElementById('t-sigla').value='';
   document.getElementById('t-nombre').value='';
   document.getElementById('t-precio').value='';
@@ -1536,7 +1538,8 @@ function setColor(hex){
 
 function cambiarColor(i, color){
   tratamientos[i].color=color;
-  guardar();renderTratamientos();renderSiglasButtons();
+  guardarTratamientosSB();
+  renderTratamientos();renderSiglasButtons();
 }
 
 function editarTratamiento(i){
@@ -1552,8 +1555,11 @@ function editarTratamiento(i){
 
 function eliminarTratamiento(i){
   if(!confirm(`¿Eliminar "${tratamientos[i].sigla} — ${tratamientos[i].nombre}"?`))return;
+  const siglaEliminada=tratamientos[i].sigla;
   tratamientos.splice(i,1);
-  guardar();renderTratamientos();
+  eliminarTratamientoSB(siglaEliminada);
+  guardarTratamientosSB();
+  renderTratamientos();
 }
 
 /* ── COSTOS ── */
@@ -1666,7 +1672,7 @@ function guardarCostos(){
     precioPulso: parseFloat(document.getElementById('co-precio-pulso').value)||0,
     dolar:       parseFloat(document.getElementById('co-dolar').value)||0,
   };
-  guardarCostosData();
+  guardarCostosSB(fecha, costos[fecha]);
   showAlert(`✓ Costos del ${fecha.split('-').reverse().join('/')} guardados`);
 }
 
@@ -1752,15 +1758,18 @@ function precargarHora(slot){
 }
 
 function initApp(){
-  renderTratamientos();
   const ff=document.getElementById('fecha-fija');
   if(ff) ff.value=hoy();
   const gf=document.getElementById('grilla-fecha');
   if(gf) gf.value=hoy();
   actualizarDisplayAnticipo();
   initCostos();
-  // pequeño delay para asegurar que el DOM esté completamente pintado
-  setTimeout(renderSiglasButtons, 50);
+  // Load from Supabase then render
+  cargarDesdeSB().then(()=>{
+    renderTratamientos();
+    renderSiglasButtons();
+    renderClientes();
+  });
 }
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded', initApp);
