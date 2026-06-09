@@ -60,6 +60,7 @@ tr:hover td{background:#fdf9f7}
 .toast.show{opacity:1}
 .toast-success{background:#2d7a4a;color:#fff}
 .toast-loading{background:#5a6a7a;color:#fff}
+.toast-info{background:#1565c0;color:#fff}
 .toast-error{background:#c0392b;color:#fff}
 .filter-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
 .filter-row input{padding:8px 11px;border:1px solid #e0d8d2;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit;outline:none}
@@ -615,6 +616,67 @@ const DEFAULT_TRATAMIENTOS = [
   {sigla:'PEH',nombre:'Pierna Entera Hombre',precio:31000,color:'#00bcd4'},
   {sigla:'PVH',nombre:'Pelvis Hombre',        precio:17000,color:'#00bcd4'},
 ];
+// ── SUPABASE ──
+const SB_URL='https://nehrkxpxtopswpcpoyon.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5laHJreHB4dG9wc3dwY3BveW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjYwMDksImV4cCI6MjA5NjYwMjAwOX0.S6dYUcATeOpgMA-1uIibygecOVh5lXygv8yQO1556Uo';
+const SB_HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function sbGet(table,params=''){
+  const r=await fetch(SB_URL+'/rest/v1/'+table+params,{headers:SB_HEADERS});
+  return r.json();
+}
+async function sbPost(table,body){
+  const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(body)});
+  return r.ok;
+}
+async function sbDelete(table,params){
+  const r=await fetch(SB_URL+'/rest/v1/'+table+params,{method:'DELETE',headers:SB_HEADERS});
+  return r.ok;
+}
+async function sbUpsert(table,body){
+  const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+  return r.ok;
+}
+
+function mapTurnoFromSB(r){return{id:r.id,cliente:r.cliente,telefono:r.telefono||'',fecha:r.fecha,hora:r.hora||'',siglas:r.siglas||'[]',notas:r.notas||'',anticipo:r.anticipo||false,anticipoMonto:r.anticipo_monto||0,promo:r.promo||false,promoPct:r.promo_pct||0,redondeo:r.redondeo||0,totalFinal:r.total_final||0,creado:r.creado||''};}
+function mapClienteFromSB(r){return{nombre:r.nombre,telefono:r.telefono||'',mail:r.mail||''};}
+function mapTratFromSB(r){return{sigla:r.sigla,nombre:r.nombre,precio:r.precio||0,color:r.color||'#f5ede9'};}
+function mapCostoFromSB(r){return{entrada:r.entrada||'',salida:r.salida||'',precioHora:r.precio_hora||0,redondeo:r.redondeo||0,comida:r.comida||0,pulsosInicio:r.pulsos_inicio||0,pulsosCierre:r.pulsos_cierre||0,precioPulso:r.precio_pulso||0,dolar:r.dolar||0};}
+
+async function cargarDesdeSB(){
+  showAlert('Cargando...','info');
+  try{
+    const [t,c,tr,co]=await Promise.all([
+      sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),
+      sbGet('clientes','?select=*&order=nombre.asc'),
+      sbGet('tratamientos','?select=*&order=orden.asc'),
+      sbGet('costos','?select=*')
+    ]);
+    if(Array.isArray(t)) turnos=t.map(mapTurnoFromSB);
+    if(Array.isArray(c)) clientes=c.map(mapClienteFromSB);
+    if(Array.isArray(tr)&&tr.length) tratamientos=tr.map(mapTratFromSB);
+    else await guardarTratamientosSB();
+    if(Array.isArray(co)) co.forEach(d=>{costos[d.fecha]=mapCostoFromSB(d);});
+  }catch(e){console.error('SB error:',e);}
+}
+
+async function guardarTurnoSB(t){
+  return sbUpsert('turnos',{id:t.id,cliente:t.cliente,telefono:t.telefono||'',fecha:t.fecha,hora:t.hora||'',siglas:t.siglas,notas:t.notas||'',anticipo:t.anticipo||false,anticipo_monto:t.anticipoMonto||0,promo:t.promo||false,promo_pct:t.promoPct||0,redondeo:t.redondeo||0,total_final:t.totalFinal||0,creado:t.creado||''});
+}
+async function eliminarTurnoSB(id){return sbDelete('turnos','?id=eq.'+id);}
+async function guardarClienteSB(c){return sbUpsert('clientes',{nombre:c.nombre,telefono:c.telefono||'',mail:c.mail||''});}
+async function eliminarClienteSB(nombre){return sbDelete('clientes','?nombre=eq.'+encodeURIComponent(nombre));}
+async function eliminarTratamientoSB(sigla){return sbDelete('tratamientos','?sigla=eq.'+encodeURIComponent(sigla));}
+async function guardarTratamientosSB(){
+  await sbDelete('tratamientos','?orden=gte.-1');
+  const rows=tratamientos.map((t,i)=>({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i}));
+  if(rows.length) return sbPost('tratamientos',rows);
+}
+async function guardarCostosSB(fecha,d){
+  return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});
+}
+// ── FIN SUPABASE ──
+
 let tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || DEFAULT_TRATAMIENTOS;
 let turnos       = JSON.parse(localStorage.getItem('halime_turnos')       || '[]');
 let clientes     = JSON.parse(localStorage.getItem('halime_clientes')     || '[]');
