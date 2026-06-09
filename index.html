@@ -259,6 +259,14 @@ tr:hover td{background:#fdf9f7}
           </div>
         </div>
         <!-- Saldo y descuento -->
+        <!-- Redondeo -->
+        <div style="display:flex;align-items:center;gap:8px;border-top:1px solid #ede8e4;padding-top:10px">
+          <label style="font-size:15px;color:#5a3800;font-weight:500;white-space:nowrap">Redondeo</label>
+          <span style="font-size:13px;color:#a89890">$</span>
+          <input type="number" id="f-redondeo" placeholder="0" oninput="actualizarTotalFinal()"
+            style="width:120px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+          <span style="font-size:12px;color:#a89890">(se suma al total)</span>
+        </div>
         <div style="display:flex;gap:1rem;flex-wrap:wrap">
           <div id="f-saldo-wrap" style="display:none;font-size:13px;color:#a89890">
             Saldo: <span id="f-saldo" style="font-weight:600;color:#b8877a;font-size:15px"></span>
@@ -266,6 +274,9 @@ tr:hover td{background:#fdf9f7}
           <div id="f-descuento-wrap" style="display:none;font-size:13px;color:#a89890">
             Descuento: <span id="f-descuento-monto" style="font-weight:600;color:#2d7a4a;font-size:15px"></span>
             → Total con promo: <span id="f-total-promo" style="font-weight:600;color:#2d7a4a;font-size:15px"></span>
+          </div>
+          <div id="f-total-final-wrap" style="display:none;font-size:13px;color:#a89890">
+            Total final: <span id="f-total-final" style="font-weight:600;color:#b8877a;font-size:15px"></span>
           </div>
         </div>
       </div>
@@ -773,6 +784,27 @@ function togglePromo(){
   actualizarPromo();
 }
 
+function actualizarTotalFinal(){
+  const totalEl = document.getElementById('preview-total');
+  const total = totalEl ? parseFloat(totalEl.textContent.replace(/[^0-9]/g,''))||0 : 0;
+  const promoCheck = document.getElementById('f-promo-check');
+  const promoPct = promoCheck&&promoCheck.checked ? (parseFloat(document.getElementById('f-promo-pct').value)||0) : 0;
+  const redondeo = parseFloat(document.getElementById('f-redondeo')?.value)||0;
+  const descuento = Math.round(total * promoPct / 100);
+  const totalFinal = total - descuento + redondeo;
+  const wrap = document.getElementById('f-total-final-wrap');
+  const el = document.getElementById('f-total-final');
+  if(wrap && el){
+    if(redondeo !== 0 || promoPct > 0){
+      el.textContent = '$'+totalFinal.toLocaleString('es-AR');
+      wrap.style.display = 'block';
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+  actualizarSaldo();
+}
+
 function actualizarPromo(){
   const check = document.getElementById('f-promo-check');
   const dWrap = document.getElementById('f-descuento-wrap');
@@ -786,6 +818,7 @@ function actualizarPromo(){
   document.getElementById('f-descuento-monto').textContent = '-$'+descuento.toLocaleString('es-AR');
   document.getElementById('f-total-promo').textContent = '$'+totalPromo.toLocaleString('es-AR');
   if(dWrap) dWrap.style.display = 'block';
+  actualizarTotalFinal();
 }
 
 function actualizarSaldo(){
@@ -860,9 +893,10 @@ function guardarTurno(){
   const {items,total}=calcularTurno(siglasTexto);
   const anticipoCheck = document.getElementById('f-anticipo-check').checked;
   const anticipoMonto = anticipoCheck ? (parseFloat(document.getElementById('anticipo-fijo').value)||0) : 0;
+  const redondeo = parseFloat(document.getElementById('f-redondeo')?.value)||0;
   const promoCheck = document.getElementById('f-promo-check').checked;
   const promoPct = promoCheck ? (parseFloat(document.getElementById('f-promo-pct').value)||0) : 0;
-  const totalConPromo = promoCheck ? Math.round(total * (1 - promoPct/100)) : total;
+  const totalConPromo = Math.round((promoCheck ? total*(1-promoPct/100) : total) + redondeo);
   const turno={
     id:Date.now(), cliente, telefono,
     fecha, hora,
@@ -870,6 +904,7 @@ function guardarTurno(){
     notas:document.getElementById('f-notas').value.trim(),
     promo: promoCheck,
     promoPct: promoPct,
+    redondeo: redondeo,
     totalFinal: totalConPromo,
     anticipo: anticipoCheck,
     anticipoMonto,
@@ -884,8 +919,7 @@ function guardarTurno(){
 function limpiarFormulario(){
   // limpiar campos de forma segura
   // reset hora slots
-  const horaSlots=document.getElementById('hora-slots');
-  if(horaSlots) horaSlots.querySelectorAll('button').forEach(function(b){b.style.background='#fff';b.style.color='#5a3800';b.style.borderColor='#e0d8d2';});
+  if(typeof window.renderHoraSlots==='function') window.renderHoraSlots();
   ['f-cliente','f-hora','f-notas'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value='';
@@ -893,6 +927,10 @@ function limpiarFormulario(){
   // reset anticipo checkbox
   const ac=document.getElementById('f-anticipo-check');
   if(ac) ac.checked=false;
+  const rd=document.getElementById('f-redondeo');
+  if(rd) rd.value='';
+  const tfw=document.getElementById('f-total-final-wrap');
+  if(tfw) tfw.style.display='none';
   const pc=document.getElementById('f-promo-check');
   if(pc) pc.checked=false;
   const pw=document.getElementById('f-promo-wrap');
@@ -962,6 +1000,7 @@ function turnoCard(t){
     ${t.notas?`<div style="font-size:12px;color:#a89890;margin-top:5px;font-style:italic">${t.notas}</div>`:''}
     ${t.anticipo?`<div style="margin-top:5px"><span style="background:#e8f5e9;color:#2d7a4a;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500">Anticipo $${(t.anticipoMonto||0).toLocaleString('es-AR')}</span></div>`:''}
     ${t.promo?`<div style="margin-top:3px"><span style="background:#fff8e1;color:#b8860b;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500">Promo ${t.promoPct}% desc.</span></div>`:''}
+    ${t.redondeo?`<div style="margin-top:3px"><span style="background:#e3f2fd;color:#1565c0;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500">Redondeo +$${t.redondeo.toLocaleString('es-AR')}</span></div>`:''}
   </div>`;
 }
 
