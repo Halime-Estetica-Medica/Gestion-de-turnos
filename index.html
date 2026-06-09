@@ -666,11 +666,26 @@ async function guardarTurnoSB(t){
 async function eliminarTurnoSB(id){return sbDelete('turnos','?id=eq.'+id);}
 async function guardarClienteSB(c){return sbUpsert('clientes',{nombre:c.nombre,telefono:c.telefono||'',mail:c.mail||''});}
 async function eliminarClienteSB(nombre){return sbDelete('clientes','?nombre=eq.'+encodeURIComponent(nombre));}
-async function eliminarTratamientoSB(sigla){return sbDelete('tratamientos','?sigla=eq.'+encodeURIComponent(sigla));}
+async function eliminarTratamientoSB(sigla){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(sigla),{
+      method:'DELETE',
+      headers:SB_HEADERS
+    });
+    return r.ok;
+  }catch(e){console.error('Error eliminando zona:',e);return false;}
+}
 async function guardarTratamientosSB(){
-  await sbDelete('tratamientos','?orden=gte.-1');
   const rows=tratamientos.map((t,i)=>({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i}));
-  if(rows.length) return sbPost('tratamientos',rows);
+  if(!rows.length) return true;
+  try{
+    const r = await fetch(SB_URL+'/rest/v1/tratamientos',{
+      method:'POST',
+      headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(rows)
+    });
+    return r.ok;
+  }catch(e){console.error('Error guardando zonas:',e);return false;}
 }
 async function guardarCostosSB(fecha,d){
   return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});
@@ -1613,7 +1628,11 @@ function eliminarTratamiento(i){
   if(!confirm(`¿Eliminar "${tratamientos[i].sigla} — ${tratamientos[i].nombre}"?`))return;
   const siglaEliminada=tratamientos[i].sigla;
   tratamientos.splice(i,1);
-  eliminarTratamientoSB(siglaEliminada).then(()=>guardarTratamientosSB());
+  // delete this sigla from SB, then upsert the rest with new order
+  eliminarTratamientoSB(siglaEliminada).then(()=>{
+    guardarTratamientosSB();
+    showAlert('Zona eliminada');
+  });
   renderTratamientos();
   renderSiglasButtons();
 }
