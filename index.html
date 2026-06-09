@@ -1212,25 +1212,31 @@ function abrirWA(id){
   const numero = tel.replace(/\D/g,'');
   const fecha = t.fecha ? t.fecha.split('-').reverse().join('/') : '';
   const hora = t.hora || '';
-  const siglas = parsearSiglas(t.siglas).join(', ');
-  const {total} = calcularTurno(t.siglas);
+  // use full names instead of siglas
+  const {items,total} = calcularTurno(t.siglas);
+  const zonas = items.map(i=>i.qty>1 ? i.nombre+' x'+i.qty : i.nombre).join(', ');
+  const totalMostrar = t.totalFinal !== undefined ? t.totalFinal : total;
 
-  const mensaje = `Hola ${t.cliente}! 😊 Te recordamos tu turno en *HALIME*:
+  const mensaje =
+    'Hola ' + t.cliente + '! Te recordamos tu turno en HALIME:
 
-` +
-    `📅 *Fecha:* ${fecha}
-` +
-    `🕐 *Hora:* ${hora}
-` +
-    `✨ *Tratamientos:* ${siglas}
-` +
-    `💰 *Total:* $${total.toLocaleString('es-AR')}` +
-    (t.anticipo && t.anticipoMonto ? `
-✅ *Anticipo pagado:* $${t.anticipoMonto.toLocaleString('es-AR')}
-💳 *Saldo:* $${(total-t.anticipoMonto).toLocaleString('es-AR')}` : '') +
-    `
+' +
+    'Fecha: ' + fecha + '
+' +
+    'Hora: ' + hora + '
+' +
+    'Zonas: ' + zonas + '
+' +
+    'Total: $' + totalMostrar.toLocaleString('es-AR') +
+    (t.anticipo && t.anticipoMonto ?
+      '
+Anticipo pagado: $' + t.anticipoMonto.toLocaleString('es-AR') +
+      '
+Saldo: $' + (totalMostrar - t.anticipoMonto).toLocaleString('es-AR')
+      : '') +
+    '
 
-¡Te esperamos! 🌸`;
+Te esperamos!';
 
   document.getElementById('wa-numero').value = numero;
   document.getElementById('wa-mensaje').value = mensaje;
