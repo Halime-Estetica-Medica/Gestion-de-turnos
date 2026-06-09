@@ -194,23 +194,39 @@ tr:hover td{background:#fdf9f7}
       </div>
       <script>
       (function(){
-        const slots=["09:00", "09:20", "09:40", "10:00", "10:20", "10:40", "11:00", "11:20", "11:40", "12:00", "12:20", "12:40", "13:00", "13:20", "13:40", "14:00", "14:20", "14:40", "15:00", "15:20", "15:40", "16:00", "16:20", "16:40", "17:00", "17:20", "17:40", "18:00"];
+        const slots=["09:00","09:20","09:40","10:00","10:20","10:40","11:00","11:20","11:40","12:00","12:20","12:40","13:00","13:20","13:40","14:00","14:20","14:40","15:00","15:20","15:40","16:00","16:20","16:40","17:00","17:20","17:40","18:00"];
         const cont=document.getElementById('hora-slots');
         if(!cont)return;
-        slots.forEach(function(s){
-          const btn=document.createElement('button');
-          btn.type='button';
-          btn.textContent=s;
-          btn.style.cssText='padding:7px 12px;border-radius:8px;border:1.5px solid #e0d8d2;background:#fff;font-size:13px;font-weight:500;color:#5a3800;cursor:pointer;transition:all 0.12s;font-family:inherit';
-          btn.onclick=function(){
-            document.getElementById('f-hora').value=s;
-            cont.querySelectorAll('button').forEach(function(b){b.style.background='#fff';b.style.color='#5a3800';b.style.borderColor='#e0d8d2';});
-            btn.style.background='#b8877a';
-            btn.style.color='#fff';
-            btn.style.borderColor='#b8877a';
-          };
-          cont.appendChild(btn);
-        });
+
+        function renderHoraSlots(){
+          cont.innerHTML='';
+          const fecha=document.getElementById('fecha-fija')?document.getElementById('fecha-fija').value:'';
+          const turnosGuardados=JSON.parse(localStorage.getItem('halime_turnos')||'[]');
+          const ocupados=new Set(turnosGuardados.filter(function(t){return t.fecha===fecha;}).map(function(t){return t.hora;}));
+          slots.forEach(function(s){
+            const btn=document.createElement('button');
+            btn.type='button';
+            btn.textContent=s;
+            if(ocupados.has(s)){
+              btn.style.cssText='padding:7px 12px;border-radius:8px;border:1.5px solid #9b0a2a;background:#d81b4a;font-size:13px;font-weight:700;color:#fff;cursor:not-allowed;font-family:inherit';
+              btn.title='Horario ocupado';
+              btn.disabled=true;
+            } else {
+              btn.style.cssText='padding:7px 12px;border-radius:8px;border:1.5px solid #e0d8d2;background:#fff;font-size:13px;font-weight:500;color:#5a3800;cursor:pointer;transition:all 0.12s;font-family:inherit';
+              btn.onclick=function(){
+                document.getElementById('f-hora').value=s;
+                cont.querySelectorAll('button:not([disabled])').forEach(function(b){b.style.background='#fff';b.style.color='#5a3800';b.style.borderColor='#e0d8d2';});
+                btn.style.background='#b8877a';btn.style.color='#fff';btn.style.borderColor='#b8877a';
+              };
+            }
+            cont.appendChild(btn);
+          });
+        }
+
+        setTimeout(renderHoraSlots,100);
+        const ff=document.getElementById('fecha-fija');
+        if(ff) ff.addEventListener('change',renderHoraSlots);
+        window.renderHoraSlots=renderHoraSlots;
       })();
       </script>
       <div class="field" style="margin-bottom:12px">
@@ -1271,7 +1287,10 @@ function exportarExcel(){
   wsCostos['!cols'] = [10,8,8,10,12,10,10,10,12,12,12,14,10,12,12].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, wsCostos, 'Costos');
 
-  XLSX.writeFile(wb, 'halime_'+hoy()+'.xlsx');
+  // use fecha-fija if set, otherwise today
+  const fechaArchivo = document.getElementById('fecha-fija')?.value || hoy();
+  const fechaFmt = fechaArchivo.split('-').reverse().join('-');
+  XLSX.writeFile(wb, 'halime_'+fechaFmt+'.xlsx');
   showAlert('✓ Excel exportado con 4 hojas');
 }
 
