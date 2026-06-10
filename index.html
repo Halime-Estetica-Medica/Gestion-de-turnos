@@ -679,11 +679,18 @@ async function guardarTratamientosSB(){
   const rows=tratamientos.map((t,i)=>({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i}));
   if(!rows.length) return true;
   try{
+    // delete all existing rows first
+    await fetch(SB_URL+'/rest/v1/tratamientos?sigla=neq.IMPOSSIBLE_SIGLA_XYZ',{
+      method:'DELETE',
+      headers:SB_HEADERS
+    });
+    // then insert fresh
     const r = await fetch(SB_URL+'/rest/v1/tratamientos',{
       method:'POST',
-      headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      headers:{...SB_HEADERS,'Prefer':'return=minimal'},
       body:JSON.stringify(rows)
     });
+    if(!r.ok){const t=await r.text();console.error('Error insertando zonas:',r.status,t);}
     return r.ok;
   }catch(e){console.error('Error guardando zonas:',e);return false;}
 }
