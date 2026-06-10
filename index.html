@@ -693,22 +693,28 @@ async function eliminarTratamientoSB(sigla){
   }catch(e){console.error('Error eliminando zona:',e);return false;}
 }
 async function guardarTratamientosSB(){
-  // Build full rows with current order
-  const rows = tratamientos.map((t,i)=>({
-    sigla:t.sigla, nombre:t.nombre, precio:t.precio,
-    color:t.color||'#f5ede9', orden:i
-  }));
-  if(!rows.length) return true;
-  try{
-    // Use upsert - merge on sigla unique key
-    const r = await fetch(SB_URL+'/rest/v1/tratamientos',{
-      method:'POST',
-      headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify(rows)
-    });
-    if(!r.ok){const txt=await r.text();console.error('Error guardando zonas:',r.status,txt);}
-    return r.ok;
-  }catch(e){console.error('Error guardando zonas:',e);return false;}
+  // PATCH each zone individually to update all fields including orden
+  const results = await Promise.all(tratamientos.map((t,i)=>
+    fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(t.sigla),{
+      method:'PATCH',
+      headers:{...SB_HEADERS,'Prefer':'return=minimal'},
+      body:JSON.stringify({nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i})
+    }).then(r=>{
+      if(!r.ok) console.error('PATCH failed para',t.sigla,r.status);
+      return r.ok;
+    })
+  ));
+  return results.every(Boolean);
+}
+
+async function insertarTratamientoSB(t, orden){
+  const r = await fetch(SB_URL+'/rest/v1/tratamientos',{
+    method:'POST',
+    headers:{...SB_HEADERS,'Prefer':'return=minimal'},
+    body:JSON.stringify({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden})
+  });
+  if(!r.ok){const txt=await r.text();console.error('INSERT failed para',t.sigla,r.status,txt);}
+  return r.ok;
 }
 async function guardarCostosSB(fecha,d){
   return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});
@@ -1623,8 +1629,9 @@ function agregarTratamiento(){
   const color=document.getElementById('t-color').value||'#f5ede9';
   if(!sigla||!nombre){showAlert('Completá sigla y nombre.','error');return;}
   if(tratamientos.find(t=>t.sigla===sigla)){showAlert('Esa sigla ya existe.','error');return;}
-  tratamientos.push({sigla,nombre,precio,color});
-  guardarTratamientosSB();
+  const nuevaTrat={sigla,nombre,precio,color};
+  tratamientos.push(nuevaTrat);
+  insertarTratamientoSB(nuevaTrat, tratamientos.length-1);
   renderTratamientos();renderSiglasButtons();
   document.getElementById('t-sigla').value='';
   document.getElementById('t-nombre').value='';
