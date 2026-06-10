@@ -1040,9 +1040,11 @@ function guardarTurno(){
     creado:new Date().toISOString()
   };
   turnos.push(turno);
-  guardar();
+  guardarTurnoSB(turno).then(ok=>{
+    if(ok) showAlert(`✓ Turno de ${cliente} guardado — $${totalConPromo.toLocaleString('es-AR')}`);
+    else showAlert('Error al guardar el turno.','error');
+  });
   limpiarFormulario();
-  showAlert(`✓ Turno de ${cliente} guardado — $${total.toLocaleString('es-AR')}`);
 }
 
 function limpiarFormulario(){
