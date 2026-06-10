@@ -390,7 +390,7 @@ tr:hover td{background:#fdf9f7}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
         <div class="section-title" style="margin-bottom:0">Zonas activas</div>
-        <span style="font-size:12px;color:#a89890">Arrastrá los bloques para reordenar · Doble click para editar</span>
+        <span style="font-size:12px;color:#a89890">▲▼ para reordenar · Doble click para editar</span>
       </div>
       <div id="trat-bloques" style="display:flex;flex-wrap:wrap;gap:8px;min-height:60px"></div>
     </div>
@@ -1539,15 +1539,14 @@ function renderTratamientos(){
   cont.innerHTML=tratamientos.map((t,i)=>{
     const color=t.color||'#f5ede9';
     const dark=colorDark(color);
-    return `<div class="trat-bloque" draggable="true" data-idx="${i}"
+    return `<div class="trat-bloque" data-idx="${i}"
         style="background:${color};color:${dark}"
-        ondblclick="editarBloque(${i})"
-        ondragstart="dragStart(event,${i})"
-        ondragover="dragOver(event)"
-        ondragleave="dragLeave(event)"
-        ondrop="dragDrop(event,${i})"
-        ondragend="dragEnd(event)">
+        ondblclick="editarBloque(${i})">
       <div class="tb-actions">
+        <div style="display:flex;flex-direction:column;gap:1px">
+          ${i>0?`<div class="tb-btn" style="background:rgba(0,0,0,0.15);color:#fff;font-size:9px" onclick="event.stopPropagation();moverZona(${i},-1)" title="Subir">▲</div>`:'<div style="width:20px;height:9px"></div>'}
+          ${i<tratamientos.length-1?`<div class="tb-btn" style="background:rgba(0,0,0,0.15);color:#fff;font-size:9px" onclick="event.stopPropagation();moverZona(${i},1)" title="Bajar">▼</div>`:'<div style="width:20px;height:9px"></div>'}
+        </div>
         <div class="color-trigger tb-btn" style="background:${color};border:2px solid rgba(0,0,0,0.15);width:20px;height:20px"
           onclick="event.stopPropagation();abrirColorPopup(${i},this)" title="Color"></div>
         <div class="tb-btn tb-btn-del" onclick="event.stopPropagation();eliminarTratamiento(${i})" title="Eliminar">✕</div>
@@ -1566,6 +1565,20 @@ function renderTratamientos(){
       <span class="tb-precio">$${t.precio.toLocaleString('es-AR')}</span>
     </div>`;
   }).join('');
+}
+
+// ── Mover zonas ──
+function moverZona(i, dir){
+  const newIdx = i + dir;
+  if(newIdx < 0 || newIdx >= tratamientos.length) return;
+  const tmp = tratamientos[i];
+  tratamientos[i] = tratamientos[newIdx];
+  tratamientos[newIdx] = tmp;
+  guardarTratamientosSB().then(ok=>{
+    if(ok) showAlert('✓ Orden guardado');
+  });
+  renderTratamientos();
+  renderSiglasButtons();
 }
 
 // ── Drag & drop ──
