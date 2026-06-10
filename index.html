@@ -634,8 +634,21 @@ async function sbDelete(table,params){
   return r.ok;
 }
 async function sbUpsert(table,body){
-  const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
-  return r.ok;
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/'+table,{
+      method:'POST',
+      headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(body)
+    });
+    if(!r.ok){
+      const txt=await r.text();
+      console.error('sbUpsert error en '+table+':',r.status,txt);
+    }
+    return r.ok;
+  }catch(e){
+    console.error('sbUpsert exception en '+table+':',e);
+    return false;
+  }
 }
 
 function mapTurnoFromSB(r){return{id:r.id,cliente:r.cliente,telefono:r.telefono||'',fecha:r.fecha,hora:r.hora||'',siglas:r.siglas||'[]',notas:r.notas||'',anticipo:r.anticipo||false,anticipoMonto:r.anticipo_monto||0,promo:r.promo||false,promoPct:r.promo_pct||0,redondeo:r.redondeo||0,totalFinal:r.total_final||0,creado:r.creado||''};}
@@ -654,8 +667,13 @@ async function cargarDesdeSB(){
     ]);
     if(Array.isArray(t)) turnos=t.map(mapTurnoFromSB);
     if(Array.isArray(c)) clientes=c.map(mapClienteFromSB);
-    if(Array.isArray(tr)&&tr.length) tratamientos=tr.map(mapTratFromSB);
-    else await guardarTratamientosSB();
+    if(Array.isArray(tr)&&tr.length){
+      tratamientos=tr.map(mapTratFromSB);
+    } else if(tr.length===0){
+      // SB is empty - save current defaults to SB
+      await guardarTratamientosSB();
+    }
+    // never overwrite tratamientos if SB returns error or null
     if(Array.isArray(co)) co.forEach(d=>{costos[d.fecha]=mapCostoFromSB(d);});
   }catch(e){console.error('SB error:',e);}
 }
@@ -1870,18 +1888,22 @@ function initApp(){
     renderClientes();
   });
   // auto-refresh every 30 seconds
-  setInterval(()=>{
-    cargarDesdeSB().then(()=>{
-      renderTratamientos();
-      renderSiglasButtons();
+  setInterval(async ()=>{
+    // only refresh turnos and clientes on auto-refresh, not tratamientos
+    try{
+      const [t,c]=await Promise.all([
+        sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),
+        sbGet('clientes','?select=*&order=nombre.asc')
+      ]);
+      if(Array.isArray(t)) turnos=t.map(mapTurnoFromSB);
+      if(Array.isArray(c)) clientes=c.map(mapClienteFromSB);
       renderClientes();
-      // refresh current tab view
       const tabAgenda=document.getElementById('tab-agenda');
       if(tabAgenda&&tabAgenda.classList.contains('active')){renderAgenda();renderStats();}
       const tabGrilla=document.getElementById('tab-grilla');
       if(tabGrilla&&tabGrilla.classList.contains('active')){renderGrilla();}
       if(typeof window.renderHoraSlots==='function') window.renderHoraSlots();
-    });
+    }catch(e){console.error('Auto-refresh error:',e);}
   }, 30000);
 }
 if(document.readyState==='loading'){
