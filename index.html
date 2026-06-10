@@ -657,7 +657,6 @@ function mapTratFromSB(r){return{sigla:r.sigla,nombre:r.nombre,precio:r.precio||
 function mapCostoFromSB(r){return{entrada:r.entrada||'',salida:r.salida||'',precioHora:r.precio_hora||0,redondeo:r.redondeo||0,comida:r.comida||0,pulsosInicio:r.pulsos_inicio||0,pulsosCierre:r.pulsos_cierre||0,precioPulso:r.precio_pulso||0,dolar:r.dolar||0};}
 
 async function cargarDesdeSB(){
-  showAlert('Cargando...','info');
   try{
     const [t,c,tr,co]=await Promise.all([
       sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),
@@ -1886,6 +1885,10 @@ function initApp(){
     renderTratamientos();
     renderSiglasButtons();
     renderClientes();
+    renderAgenda();
+    renderStats();
+    renderGrilla();
+    if(typeof window.renderHoraSlots==='function') window.renderHoraSlots();
   });
   // auto-refresh every 30 seconds
   setInterval(async ()=>{
