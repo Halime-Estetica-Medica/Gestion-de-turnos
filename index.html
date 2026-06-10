@@ -664,8 +664,8 @@ async function cargarDesdeSB(){
       sbGet('tratamientos','?select=*&order=orden.asc'),
       sbGet('costos','?select=*')
     ]);
-    if(Array.isArray(t)) turnos=t.map(mapTurnoFromSB);
-    if(Array.isArray(c)) clientes=c.map(mapClienteFromSB);
+    if(Array.isArray(t) && t.length) turnos=t.map(mapTurnoFromSB);
+    if(Array.isArray(c) && c.length) clientes=c.map(mapClienteFromSB);
     if(Array.isArray(tr)&&tr.length){
       tratamientos=tr.map(mapTratFromSB);
     } else if(tr.length===0){
@@ -1900,8 +1900,8 @@ function initApp(){
         sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),
         sbGet('clientes','?select=*&order=nombre.asc')
       ]);
-      if(Array.isArray(t)) turnos=t.map(mapTurnoFromSB);
-      if(Array.isArray(c)) clientes=c.map(mapClienteFromSB);
+      if(Array.isArray(t) && t.length) turnos=t.map(mapTurnoFromSB);
+      if(Array.isArray(c) && c.length) clientes=c.map(mapClienteFromSB);
       renderClientes();
       const tabAgenda=document.getElementById('tab-agenda');
       if(tabAgenda&&tabAgenda.classList.contains('active')){renderAgenda();renderStats();}
