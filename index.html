@@ -203,7 +203,7 @@ tr:hover td{background:#fdf9f7}
         function renderHoraSlots(){
           cont.innerHTML='';
           const fecha=document.getElementById('fecha-fija')?document.getElementById('fecha-fija').value:'';
-          const turnosGuardados=JSON.parse(localStorage.getItem('halime_turnos')||'[]');
+          const turnosGuardados=(typeof turnos!=='undefined'?turnos:JSON.parse(localStorage.getItem('halime_turnos')||'[]'));
           const ocupados=new Set(turnosGuardados.filter(function(t){return t.fecha===fecha;}).map(function(t){return t.hora;}));
           slots.forEach(function(s){
             const btn=document.createElement('button');
