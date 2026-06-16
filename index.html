@@ -1351,7 +1351,7 @@ function exportarExcel(){
   const costoOperadora = hs*(d.precioHora||0)+(d.redondeo||0);
   const costoComida = d.comida||0;
   const pUsados = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
-  const costoPulsos = pUsados*1.311*(d.dolar||0);
+  const costoPulsos = pUsados*1.311;
   const totalCostos = costoOperadora + costoComida + costoPulsos;
   const gananciaNeta = totalEfectivo - totalCostos;
   const costoNico = Math.round(gananciaNeta * 0.10);
@@ -1390,10 +1390,10 @@ function exportarExcel(){
   fichaRows.push([]);
 
   // Info pulsos
-  fichaRows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Valor pulso (USD)','Dólar','Costo pulsos']);
+  fichaRows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Valor pulso ($)','Costo pulsos']);
   fichaRows.push([
     d.pulsosInicio||0, d.pulsosCierre||0, pUsados,
-    1.311, d.dolar||0, costoPulsos
+    1.311, '', costoPulsos
   ]);
   fichaRows.push([]);
 
