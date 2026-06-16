@@ -1359,15 +1359,12 @@ function exportarExcel(){
   fichaRows.push([fechaFiltro.split('-').reverse().join('/')]);
   fichaRows.push([]);
   fichaRows.push([
-    'Paciente','Hora','Tratamiento','Sesión','Zona','Total',
-    'OFF %','Seña','Diferencia','Tot. Efvo.','Notas'
+    'Paciente','Hora','Tratamiento','Total','OFF %','Seña','Diferencia','Tot. Efvo.','Notas'
   ]);
 
   turnosDia.forEach(t=>{
     const {items, total} = calcularTurno(t.siglas);
     const totalFinal = t.totalFinal !== undefined ? t.totalFinal : total;
-    const cantZonas = items.reduce((s,i)=>s+(i.qty||1),0);
-    const precioZona = cantZonas > 0 ? Math.round(total/cantZonas) : 0;
     const promoOff = t.promo ? (t.promoPct||0) : 0;
     const seña = t.anticipo ? (t.anticipoMonto||0) : 0;
     const diferencia = t.redondeo||0;
@@ -1376,8 +1373,6 @@ function exportarExcel(){
       t.cliente,
       t.hora||'',
       zonasStr,
-      cantZonas,
-      precioZona,
       total,
       promoOff ? promoOff+'%' : '',
       seña||'',
@@ -1420,7 +1415,7 @@ function exportarExcel(){
   fichaRows.push(['Ganancia neta', '', gananciaNeta - costoNico]);
 
   const wsFicha = XLSX.utils.aoa_to_sheet(fichaRows);
-  wsFicha['!cols'] = [22,8,30,8,10,10,8,10,10,10,20].map(w=>({wch:w}));
+  wsFicha['!cols'] = [22,8,32,10,8,10,10,10,20].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, wsFicha, 'Ficha');
 
   // ── Hoja 2: Todos los turnos ──
