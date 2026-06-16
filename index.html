@@ -1322,7 +1322,10 @@ function limpiarFiltros(){
 function exportarExcel(){
   if(!turnos.length){showAlert('No hay turnos para exportar.','error');return;}
   const wb = XLSX.utils.book_new();
-  const fechaFiltro = document.getElementById('fecha-fija')?.value || hoy();
+  // Usar fecha de costos si está disponible, sino fecha-fija de agenda, sino hoy
+  const cFecha = document.getElementById('co-fecha')?.value;
+  const aFecha = document.getElementById('fecha-fija')?.value;
+  const fechaFiltro = (cFecha || aFecha || hoy()).substring(0,10);
 
   // ── Hoja 1: Ficha del día (formato planilla Halime) ──
   const turnosDia = [...turnos]
