@@ -1409,7 +1409,7 @@ function exportarExcel(){
       promoOff||'',
       seña||'',
       diferencia||'',
-      {f: `D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum})`},
+      {f: `ROUND(D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum}),2)`},
       t.notas||''
     ]);
   });
@@ -1427,8 +1427,8 @@ function exportarExcel(){
     {f: `B${pulsoRow}-A${pulsoRow}`},
     0.093,
     d.dolar||0,
-    {f: `E${pulsoRow}*D${pulsoRow}/100`},
-    {f: `C${pulsoRow}*F${pulsoRow}`}
+    {f: `ROUND(E${pulsoRow}*D${pulsoRow}/100,2)`},
+    {f: `ROUND(C${pulsoRow}*F${pulsoRow},2)`}
   ]);
 
   // 2 filas vacías
@@ -1471,17 +1471,17 @@ function exportarExcel(){
   rows.push(['Total cobrado','',{f: sumTurnos}]);
   rows.push([]);
   rows.push(['COSTOS']);
-  rows.push(['Operadora','',{f:`C${R_HS}*C${R_PRECIO_HORA}+C${R_REDONDEO}`}]);
+  rows.push(['Operadora','',{f:`ROUND(C${R_HS}*C${R_PRECIO_HORA}+C${R_REDONDEO},2)`}]);
   rows.push(['  Horas trabajadas','',hs]);
   rows.push(['  Precio/hora','',d.precioHora||0]);
   rows.push(['  Redondeo','',d.redondeo||0]);
   rows.push(['Comida','',d.comida||0]);
-  rows.push(['Pulsos','',{f:`G${pulsoRow}`}]);
-  rows.push(['10% Nico','',{f:`(C${R_TOTAL_COBRADO}-C${R_OPERADORA}-C${R_COMIDA}-C${R_PULSOS_COSTO})*0.1`}]);
+  rows.push(['Pulsos','',{f:`ROUND(G${pulsoRow},2)`}]);
+  rows.push(['10% Nico','',{f:`ROUND((C${R_TOTAL_COBRADO}-C${R_OPERADORA}-C${R_COMIDA}-C${R_PULSOS_COSTO})*0.1,2)`}]);
   rows.push([]);
-  rows.push(['Total costos','',{f:`C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO}`}]);
+  rows.push(['Total costos','',{f:`ROUND(C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO},2)`}]);
   rows.push([]);
-  rows.push(['Ganancia neta','',{f:`C${R_TOTAL_COBRADO}-C${R_TOTAL_COSTOS}`}]);
+  rows.push(['Ganancia neta','',{f:`ROUND(C${R_TOTAL_COBRADO}-C${R_TOTAL_COSTOS},2)`}]);
 
   const wsFicha = XLSX.utils.aoa_to_sheet(rows);
   wsFicha['!cols'] = [22,8,32,12,8,12,12,12,20].map(w=>({wch:w}));
