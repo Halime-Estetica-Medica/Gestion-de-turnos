@@ -1322,25 +1322,129 @@ function limpiarFiltros(){
 function exportarExcel(){
   if(!turnos.length){showAlert('No hay turnos para exportar.','error');return;}
   const wb = XLSX.utils.book_new();
-  // Usar fecha de costos si está disponible, sino fecha-fija de agenda, sino hoy
+
+  // Obtener fecha
   const cFecha = document.getElementById('co-fecha')?.value;
   const aFecha = document.getElementById('fecha-fija')?.value;
   const fechaFiltro = (cFecha || aFecha || hoy()).substring(0,10);
 
-  // ── Hoja 1: Ficha del día (formato planilla Halime) ──
   const turnosDia = [...turnos]
     .filter(t=>t.fecha===fechaFiltro)
     .sort((a,b)=>a.hora>b.hora?1:-1);
 
-  // Calcular totales del día
-  let totalEfectivo = 0;
-  turnosDia.forEach(t=>{
-    const {total} = calcularTurno(t.siglas);
-    totalEfectivo += t.totalFinal !== undefined ? t.totalFinal : total;
+  // Costos del día
+  const d = costos[fechaFiltro]||{};
+  const pUsados = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
+
+  // ── Hoja 1: Ficha ──
+  // Construimos las filas. Los números de fila de Excel son 1-based.
+  // Fila 1: Ficha Halime
+  // Fila 2: fecha
+  // Fila 3: vacía
+  // Fila 4: encabezados turnos
+  // Filas 5..5+n-1: turnos
+  // luego: sección costos
+
+  const R_HEADER = 4; // fila de encabezados (1-based)
+  const R_FIRST_TURNO = 5;
+  const nTurnos = turnosDia.length;
+  const R_LAST_TURNO = R_FIRST_TURNO + nTurnos - 1;
+
+  // Después de turnos: 2 filas vacías, luego sección pulsos, luego resumen
+  const R_PULSOS_HEADER = R_LAST_TURNO + 3;
+  const R_PULSOS_DATA   = R_PULSOS_HEADER + 1;
+  // Pulsos: col A=inicio, B=fin, C=consumidos, D=valor pulso USD, E=dolar, F=valor pulso $, G=costo pulsos
+  // C = B - A, F = E * D / 100, G = A_consumidos * F
+
+  const R_RESUMEN = R_PULSOS_DATA + 3;
+  // R_RESUMEN: "RESUMEN DEL DÍA"
+  // R_RESUMEN+1: Total cobrado = SUM(J de turnos) → col J = Tot.Efvo.
+  // R_RESUMEN+2: vacía
+  // R_RESUMEN+3: "COSTOS"
+  // R_RESUMEN+4: Operadora = horas * precio/hora + redondeo
+  // R_RESUMEN+5: Entrada
+  // R_RESUMEN+6: Salida
+  // R_RESUMEN+7: Horas trabajadas (calculado)
+  // R_RESUMEN+8: Precio/hora
+  // R_RESUMEN+9: Redondeo
+  // R_RESUMEN+10: Comida
+  // R_RESUMEN+11: Pulsos = ref a G de pulsos
+  // R_RESUMEN+12: 10% Nico = (total cobrado - costos sin nico) * 0.10
+  // R_RESUMEN+13: vacía
+  // R_RESUMEN+14: Total costos
+  // R_RESUMEN+15: vacía
+  // R_RESUMEN+16: Ganancia neta
+
+  // Columnas: A=Paciente, B=Hora, C=Tratamiento, D=Total, E=OFF%, F=Seña, G=Diferencia, H=Tot.Efvo., I=Notas
+  // Índices: A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8
+
+  const rows = [];
+
+  // Fila 1: título
+  rows.push(['Ficha Halime']);
+  // Fila 2: fecha
+  rows.push([fechaFiltro.split('-').reverse().join('/')]);
+  // Fila 3: vacía
+  rows.push([]);
+  // Fila 4: encabezados
+  rows.push(['Paciente','Hora','Tratamiento','Total lista','OFF %','Seña','Diferencia','Tot. Efvo.','Notas']);
+
+  // Filas de turnos
+  turnosDia.forEach((t,i)=>{
+    const {items, total} = calcularTurno(t.siglas);
+    const totalFinal = t.totalFinal !== undefined ? t.totalFinal : total;
+    const promoOff = t.promo ? (t.promoPct||0) : 0;
+    const seña = t.anticipo ? (t.anticipoMonto||0) : 0;
+    const diferencia = t.redondeo||0;
+    const zonasStr = items.map(i=>i.qty>1?i.nombre+' x'+i.qty:i.nombre).join(', ');
+    const rowNum = R_FIRST_TURNO + i; // 1-based Excel row
+    // Tot.Efvo. como fórmula: =D? - E?*D?/100 + G? - F?  (pero es más simple usar el valor ya calculado con fórmula de referencia)
+    // Usamos fórmula: =D{row} * (1 - E{row}/100) + G{row}
+    // Si hay seña mostrarla igual, Tot.Efvo ya es el total final
+    rows.push([
+      t.cliente,
+      t.hora||'',
+      zonasStr,
+      total,
+      promoOff||'',
+      seña||'',
+      diferencia||'',
+      {f: `D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum})`},
+      t.notas||''
+    ]);
   });
 
-  // Calcular costos del día
-  const d = costos[fechaFiltro]||{};
+  // 2 filas vacías
+  rows.push([]);
+  rows.push([]);
+
+  // Sección pulsos: A=inicio, B=fin, C=consumidos(fórmula), D=valor USD, E=dólar, F=valor $, G=costo
+  const pulsoRow = R_PULSOS_DATA; // 1-based
+  rows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Valor pulso (USD)','Dólar','Valor pulso ($)','Costo pulsos']);
+  rows.push([
+    d.pulsosInicio||0,
+    d.pulsosCierre||0,
+    {f: `B${pulsoRow}-A${pulsoRow}`},
+    0.093,
+    d.dolar||0,
+    {f: `E${pulsoRow}*D${pulsoRow}/100`},
+    {f: `C${pulsoRow}*F${pulsoRow}`}
+  ]);
+
+  // 2 filas vacías
+  rows.push([]);
+  rows.push([]);
+
+  // Referencias útiles
+  const totEfvoCol = 'H'; // Tot. Efvo. columna
+  const sumTurnos = nTurnos > 0
+    ? `SUM(${totEfvoCol}${R_FIRST_TURNO}:${totEfvoCol}${R_LAST_TURNO})`
+    : '0';
+
+  const resRow = (offset) => R_RESUMEN + offset;
+
+  // Operadora: horas * precio/hora + redondeo
+  // Horas las calculamos en JS y las ponemos como valor, precio/hora y redondeo como valores
   let hs = 0;
   if(d.entrada && d.salida){
     const [eh,em]=d.entrada.split(':').map(Number);
@@ -1348,77 +1452,39 @@ function exportarExcel(){
     const min=(sh*60+sm)-(eh*60+em);
     if(min>0) hs=Math.round(min/60*100)/100;
   }
-  const costoOperadora = hs*(d.precioHora||0)+(d.redondeo||0);
-  const costoComida = d.comida||0;
-  const pUsados = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
-  const costoPulsos = pUsados*1.311;
-  const totalCostos = costoOperadora + costoComida + costoPulsos;
-  const gananciaNeta = totalEfectivo - totalCostos;
-  const costoNico = Math.round(gananciaNeta * 0.10);
 
-  // Encabezado ficha
-  const fichaRows = [];
-  fichaRows.push(['Ficha Halime']);
-  fichaRows.push([fechaFiltro.split('-').reverse().join('/')]);
-  fichaRows.push([]);
-  fichaRows.push([
-    'Paciente','Hora','Tratamiento','Total','OFF %','Seña','Diferencia','Tot. Efvo.','Notas'
-  ]);
+  // Filas resumen - usamos columnas C para valores
+  // resRow(0) = RESUMEN DEL DÍA label
+  const R0 = resRow(0);
+  const R_TOTAL_COBRADO = resRow(1);
+  const R_OPERADORA     = resRow(4);
+  const R_HS            = resRow(5);
+  const R_PRECIO_HORA   = resRow(6);
+  const R_REDONDEO      = resRow(7);
+  const R_COMIDA        = resRow(8);
+  const R_PULSOS_COSTO  = resRow(9);
+  const R_NICO          = resRow(10);
+  const R_TOTAL_COSTOS  = resRow(12);
+  const R_GANANCIA      = resRow(14);
 
-  turnosDia.forEach(t=>{
-    const {items, total} = calcularTurno(t.siglas);
-    const totalFinal = t.totalFinal !== undefined ? t.totalFinal : total;
-    const promoOff = t.promo ? (t.promoPct||0) : 0;
-    const seña = t.anticipo ? (t.anticipoMonto||0) : 0;
-    const diferencia = t.redondeo||0;
-    const zonasStr = items.map(i=>i.qty>1?i.nombre+' x'+i.qty:i.nombre).join(', ');
-    fichaRows.push([
-      t.cliente,
-      t.hora||'',
-      zonasStr,
-      total,
-      promoOff ? promoOff+'%' : '',
-      seña||'',
-      diferencia||'',
-      totalFinal,
-      t.notas||''
-    ]);
-  });
+  rows.push(['RESUMEN DEL DÍA']);
+  rows.push(['Total cobrado','',{f: sumTurnos}]);
+  rows.push([]);
+  rows.push(['COSTOS']);
+  rows.push(['Operadora','',{f:`C${R_HS}*C${R_PRECIO_HORA}+C${R_REDONDEO}`}]);
+  rows.push(['  Horas trabajadas','',hs]);
+  rows.push(['  Precio/hora','',d.precioHora||0]);
+  rows.push(['  Redondeo','',d.redondeo||0]);
+  rows.push(['Comida','',d.comida||0]);
+  rows.push(['Pulsos','',{f:`G${pulsoRow}`}]);
+  rows.push(['10% Nico','',{f:`(C${R_TOTAL_COBRADO}-C${R_OPERADORA}-C${R_COMIDA}-C${R_PULSOS_COSTO})*0.1`}]);
+  rows.push([]);
+  rows.push(['Total costos','',{f:`C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO}`}]);
+  rows.push([]);
+  rows.push(['Ganancia neta','',{f:`C${R_TOTAL_COBRADO}-C${R_TOTAL_COSTOS}`}]);
 
-  // Espacio + resumen costos
-  fichaRows.push([]);
-  fichaRows.push([]);
-
-  // Info pulsos
-  fichaRows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Valor pulso ($)','Costo pulsos']);
-  fichaRows.push([
-    d.pulsosInicio||0, d.pulsosCierre||0, pUsados,
-    1.311, '', costoPulsos
-  ]);
-  fichaRows.push([]);
-
-  // Resumen financiero
-  fichaRows.push(['','','','','','','','','','T.C. USD', d.dolar||0]);
-  fichaRows.push([]);
-  fichaRows.push(['RESUMEN DEL DÍA']);
-  fichaRows.push(['Total cobrado','', totalEfectivo]);
-  fichaRows.push([]);
-  fichaRows.push(['COSTOS']);
-  fichaRows.push(['Operadora', '', costoOperadora]);
-  fichaRows.push(['  Entrada', d.entrada||'']);
-  fichaRows.push(['  Salida', d.salida||'']);
-  fichaRows.push(['  Precio/hora', '', d.precioHora||0]);
-  fichaRows.push(['  Redondeo', '', d.redondeo||0]);
-  fichaRows.push(['Comida', '', costoComida]);
-  fichaRows.push(['Pulsos', '', costoPulsos]);
-  fichaRows.push(['10% Nico', '', costoNico]);
-  fichaRows.push([]);
-  fichaRows.push(['Total costos', '', totalCostos + costoNico]);
-  fichaRows.push([]);
-  fichaRows.push(['Ganancia neta', '', gananciaNeta - costoNico]);
-
-  const wsFicha = XLSX.utils.aoa_to_sheet(fichaRows);
-  wsFicha['!cols'] = [22,8,32,10,8,10,10,10,20].map(w=>({wch:w}));
+  const wsFicha = XLSX.utils.aoa_to_sheet(rows);
+  wsFicha['!cols'] = [22,8,32,12,8,12,12,12,20].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, wsFicha, 'Ficha');
 
   // ── Hoja 2: Todos los turnos ──
