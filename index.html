@@ -1322,32 +1322,130 @@ function limpiarFiltros(){
 function exportarExcel(){
   if(!turnos.length){showAlert('No hay turnos para exportar.','error');return;}
   const wb = XLSX.utils.book_new();
+  const fechaFiltro = document.getElementById('fecha-fija')?.value || hoy();
 
-  // ── Hoja 1: Turnos ──
-  const turnosRows = [['Cliente','Teléfono','Fecha','Hora','Zonas','Promo','Anticipo','Monto anticipo','Total','Saldo','Notas']];
+  // ── Hoja 1: Ficha del día (formato planilla Halime) ──
+  const turnosDia = [...turnos]
+    .filter(t=>t.fecha===fechaFiltro)
+    .sort((a,b)=>a.hora>b.hora?1:-1);
+
+  // Calcular totales del día
+  let totalEfectivo = 0;
+  turnosDia.forEach(t=>{
+    const {total} = calcularTurno(t.siglas);
+    totalEfectivo += t.totalFinal !== undefined ? t.totalFinal : total;
+  });
+
+  // Calcular costos del día
+  const d = costos[fechaFiltro]||{};
+  let hs = 0;
+  if(d.entrada && d.salida){
+    const [eh,em]=d.entrada.split(':').map(Number);
+    const [sh,sm]=d.salida.split(':').map(Number);
+    const min=(sh*60+sm)-(eh*60+em);
+    if(min>0) hs=Math.round(min/60*100)/100;
+  }
+  const costoOperadora = hs*(d.precioHora||0)+(d.redondeo||0);
+  const costoComida = d.comida||0;
+  const pUsados = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
+  const costoPulsos = pUsados*1.311*(d.dolar||0);
+  const totalCostos = costoOperadora + costoComida + costoPulsos;
+  const gananciaNeta = totalEfectivo - totalCostos;
+  const costoNico = Math.round(gananciaNeta * 0.10);
+
+  // Encabezado ficha
+  const fichaRows = [];
+  fichaRows.push(['Ficha Halime']);
+  fichaRows.push([fechaFiltro.split('-').reverse().join('/')]);
+  fichaRows.push([]);
+  fichaRows.push([
+    'Paciente','Hora','Tratamiento','Sesión','Zona','Total',
+    'OFF %','Seña','Diferencia','Tot. Efvo.','Notas'
+  ]);
+
+  turnosDia.forEach(t=>{
+    const {items, total} = calcularTurno(t.siglas);
+    const totalFinal = t.totalFinal !== undefined ? t.totalFinal : total;
+    const cantZonas = items.reduce((s,i)=>s+(i.qty||1),0);
+    const precioZona = cantZonas > 0 ? Math.round(total/cantZonas) : 0;
+    const promoOff = t.promo ? (t.promoPct||0) : 0;
+    const seña = t.anticipo ? (t.anticipoMonto||0) : 0;
+    const diferencia = t.redondeo||0;
+    const zonasStr = items.map(i=>i.qty>1?i.nombre+' x'+i.qty:i.nombre).join(', ');
+    fichaRows.push([
+      t.cliente,
+      t.hora||'',
+      zonasStr,
+      cantZonas,
+      precioZona,
+      total,
+      promoOff ? promoOff+'%' : '',
+      seña||'',
+      diferencia||'',
+      totalFinal,
+      t.notas||''
+    ]);
+  });
+
+  // Espacio + resumen costos
+  fichaRows.push([]);
+  fichaRows.push([]);
+
+  // Info pulsos
+  fichaRows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Valor pulso (USD)','Dólar','Costo pulsos']);
+  fichaRows.push([
+    d.pulsosInicio||0, d.pulsosCierre||0, pUsados,
+    1.311, d.dolar||0, costoPulsos
+  ]);
+  fichaRows.push([]);
+
+  // Resumen financiero
+  fichaRows.push(['','','','','','','','','','T.C. USD', d.dolar||0]);
+  fichaRows.push([]);
+  fichaRows.push(['RESUMEN DEL DÍA']);
+  fichaRows.push(['Total cobrado','', totalEfectivo]);
+  fichaRows.push([]);
+  fichaRows.push(['COSTOS']);
+  fichaRows.push(['Operadora', '', costoOperadora]);
+  fichaRows.push(['  Entrada', d.entrada||'']);
+  fichaRows.push(['  Salida', d.salida||'']);
+  fichaRows.push(['  Precio/hora', '', d.precioHora||0]);
+  fichaRows.push(['  Redondeo', '', d.redondeo||0]);
+  fichaRows.push(['Comida', '', costoComida]);
+  fichaRows.push(['Pulsos', '', costoPulsos]);
+  fichaRows.push(['10% Nico', '', costoNico]);
+  fichaRows.push([]);
+  fichaRows.push(['Total costos', '', totalCostos + costoNico]);
+  fichaRows.push([]);
+  fichaRows.push(['Ganancia neta', '', gananciaNeta - costoNico]);
+
+  const wsFicha = XLSX.utils.aoa_to_sheet(fichaRows);
+  wsFicha['!cols'] = [22,8,30,8,10,10,8,10,10,10,20].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, wsFicha, 'Ficha');
+
+  // ── Hoja 2: Todos los turnos ──
+  const turnosRows = [['Cliente','Teléfono','Fecha','Hora','Zonas','Promo','Seña','Monto seña','Total','Notas']];
   const turnosOrdenados = [...turnos].sort((a,b)=>(a.fecha+a.hora)>(b.fecha+b.hora)?1:-1);
   turnosOrdenados.forEach(t=>{
     const tel = resolverTelefono(t);
     const {total} = calcularTurno(t.siglas);
     const totalFinal = t.totalFinal !== undefined ? t.totalFinal : total;
-    const anticipo = t.anticipo ? 'Sí' : 'No';
-    const montoAnticipo = t.anticipo ? (t.anticipoMonto||0) : 0;
-    const saldo = t.anticipo ? totalFinal - montoAnticipo : totalFinal;
-    const promoStr = t.promo ? t.promoPct+'%' : 'No';
+    const montoSeña = t.anticipo ? (t.anticipoMonto||0) : 0;
+    const promoStr = t.promo ? t.promoPct+'%' : '';
     turnosRows.push([
       t.cliente, tel,
       t.fecha ? t.fecha.split('-').reverse().join('/') : '',
       t.hora||'',
       parsearSiglas(t.siglas).join(' '),
-      promoStr, anticipo, montoAnticipo, totalFinal, saldo,
+      promoStr, t.anticipo?'Sí':'', montoSeña, totalFinal,
       t.notas||''
     ]);
   });
   const wsTurnos = XLSX.utils.aoa_to_sheet(turnosRows);
-  wsTurnos['!cols'] = [22,14,10,6,20,8,12,10,10,24].map(w=>({wch:w}));
+  wsTurnos['!cols'] = [22,14,10,6,24,8,6,10,10,20].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, wsTurnos, 'Turnos');
 
-  // ── Hoja 2: Clientes ──
+  // ── Hoja 3: Clientes ──
   const clientesRows = [['Nombre','Teléfono','Email']];
   [...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(c=>{
     clientesRows.push([c.nombre, c.telefono||'', c.mail||'']);
@@ -1356,47 +1454,16 @@ function exportarExcel(){
   wsClientes['!cols'] = [24,14,28].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, wsClientes, 'Clientes');
 
-  // ── Hoja 3: Tratamientos ──
+  // ── Hoja 4: Tratamientos ──
   const tratRows = [['Sigla','Tratamiento','Precio']];
   tratamientos.forEach(t=>tratRows.push([t.sigla, t.nombre, t.precio]));
   const wsTrat = XLSX.utils.aoa_to_sheet(tratRows);
   wsTrat['!cols'] = [8,24,12].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, wsTrat, 'Tratamientos');
 
-  // ── Hoja 4: Costos ──
-  const costosRows = [['Fecha','Entrada','Salida','Hs trabajadas','Precio/hora','Operadora','Redondeo','Comida','Pulsos inicio','Pulsos cierre','Pulsos usados','Precio pulso (USD)','Dólar','Costo pulsos','Total costos']];
-  Object.keys(costos).sort().forEach(fecha=>{
-    const d = costos[fecha];
-    let hs = 0;
-    if(d.entrada && d.salida){
-      const [eh,em]=d.entrada.split(':').map(Number);
-      const [sh,sm]=d.salida.split(':').map(Number);
-      const min=(sh*60+sm)-(eh*60+em);
-      if(min>0) hs=Math.round(min/60*100)/100;
-    }
-    const operadora = hs*(d.precioHora||0)+(d.redondeo||0);
-    const pUsados = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
-    const costoPulsos = pUsados*(d.precioPulso||0)*(d.dolar||0);
-    const totalC = operadora+(d.comida||0)+costoPulsos;
-    costosRows.push([
-      fecha.split('-').reverse().join('/'),
-      d.entrada||'', d.salida||'', hs,
-      d.precioHora||0, operadora, d.redondeo||0,
-      d.comida||0,
-      d.pulsosInicio||0, d.pulsosCierre||0, pUsados,
-      d.precioPulso||0, d.dolar||0, costoPulsos,
-      totalC
-    ]);
-  });
-  const wsCostos = XLSX.utils.aoa_to_sheet(costosRows);
-  wsCostos['!cols'] = [10,8,8,10,12,10,10,10,12,12,12,14,10,12,12].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb, wsCostos, 'Costos');
-
-  // use fecha-fija if set, otherwise today
-  const fechaArchivo = document.getElementById('fecha-fija')?.value || hoy();
-  const fechaFmt = fechaArchivo.split('-').reverse().join('-');
+  const fechaFmt = fechaFiltro.split('-').reverse().join('-');
   XLSX.writeFile(wb, 'halime_'+fechaFmt+'.xlsx');
-  showAlert('✓ Excel exportado con 4 hojas');
+  showAlert('✓ Ficha exportada');
 }
 
 /* ── CLIENTES ── */
