@@ -1121,7 +1121,7 @@ function resolverTelefono(t){
 
 function turnoCard(t){
   const badges=parsearSiglas(t.siglas).map(s=>`<span class="sigla-badge">${s}</span>`).join('');
-  const fecha=t.fecha?t.fecha.split('-').reverse().join('/'):''
+  const fecha=t.fecha?t.fecha.split('-').reverse().join('/'):'';
   const {items,total}=calcularTurno(t.siglas);
   const totalBase = total;
   let totalMostrar;
