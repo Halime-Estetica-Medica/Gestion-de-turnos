@@ -1096,7 +1096,9 @@ function exportarExcel(){
     const zonasStr=items.map(i=>i.qty>1?i.nombre+' x'+i.qty:i.nombre).join(', ');
     const rowNum=R_FIRST_TURNO+i;
     const noVinoTag=t.noVino?' [NO VINO]':'';
-    rows.push([t.cliente,t.hora||'',zonasStr,t.noVino?0:total,t.noVino?'':(promoOff||''),t.noVino?'':(seña||''),t.noVino?'':(diferencia||''),t.noVino?0:{f:`ROUND(D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum}),2)`},(t.notas||'')+noVinoTag]);
+    // Seña negativa, Tot.Efvo = total*(1-off%) + redondeo - seña
+    const señaNeg = seña ? -seña : '';
+    rows.push([t.cliente,t.hora||'',zonasStr,t.noVino?0:total,t.noVino?'':(promoOff||''),t.noVino?'':(señaNeg||''),t.noVino?'':(diferencia||''),t.noVino?0:{f:`ROUND(D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum})+IF(F${rowNum}="",0,F${rowNum}),2)`},(t.notas||'')+noVinoTag]);
   });
   rows.push([]);rows.push([]);
   const pulsoRow=R_PULSOS_DATA;
@@ -1109,27 +1111,37 @@ function exportarExcel(){
   let hs=0;
   if(d.entrada&&d.salida){const[eh,em]=d.entrada.split(':').map(Number);const[sh,sm]=d.salida.split(':').map(Number);const min=(sh*60+sm)-(eh*60+em);if(min>0)hs=Math.round(min/60*100)/100;}
   const R_TOTAL_COBRADO=resRow(1),R_OPERADORA=resRow(4),R_HS=resRow(5),R_PRECIO_HORA=resRow(6),R_REDONDEO=resRow(7),R_COMIDA=resRow(8),R_PULSOS_COSTO=resRow(9),R_NICO=resRow(10),R_TOTAL_COSTOS=resRow(12);
+  // Total señas
+  const totalSeñas = turnosDia.filter(t=>t.anticipo&&!t.noVino).reduce((s,t)=>s+(t.anticipoMonto||0),0);
+  const R_TOTAL_SEÑAS = resRow(2);
+  const R_INGRESOS    = resRow(3);
+
   rows.push(['RESUMEN DEL DÍA']);
-  rows.push(['Total cobrado','',{f:sumTurnos}]);
+  rows.push(['Total efectivo','',{f:sumTurnos}]);
+  rows.push(['Total señas','',totalSeñas]);
+  rows.push(['Ingresos totales','',{f:`ROUND(C${R_TOTAL_COBRADO}+C${R_TOTAL_SEÑAS},2)`}]);
   rows.push([]);
   rows.push(['COSTOS']);
-  rows.push(['Operadora','',{f:`ROUND(C${R_HS}*C${R_PRECIO_HORA}+C${R_REDONDEO},2)`}]);
+  rows.push(['Operadora','',{f:`-ROUND(C${R_HS}*C${R_PRECIO_HORA}+C${R_REDONDEO},2)`}]);
   rows.push(['  Horas trabajadas','',hs]);
   rows.push(['  Precio/hora','',d.precioHora||0]);
   rows.push(['  Redondeo','',d.redondeo||0]);
-  rows.push(['Comida','',d.comida||0]);
-  rows.push(['Pulsos','',{f:`ROUND(G${pulsoRow},2)`}]);
-  rows.push(['10% Nico','',{f:`ROUND((C${R_TOTAL_COBRADO}-C${R_OPERADORA}-C${R_COMIDA}-C${R_PULSOS_COSTO})*0.1,2)`}]);
+  rows.push(['Comida','',{f:`-ROUND(C${R_COMIDA},2)`}]);
+  rows.push(['Pulsos','',{f:`-ROUND(G${pulsoRow},2)`}]);
+  rows.push(['10% Nico','',{f:`-ROUND((C${R_TOTAL_COBRADO}+C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO})*0.1,2)`}]);
   rows.push([]);
   rows.push(['Total costos','',{f:`ROUND(C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO},2)`}]);
   rows.push([]);
-  rows.push(['Ganancia neta','',{f:`ROUND(C${R_TOTAL_COBRADO}-C${R_TOTAL_COSTOS},2)`}]);
   rows.push([]);
-  // Total anticipos
-  const totalAnticipados = turnosDia.filter(t=>t.anticipo&&!t.noVino).reduce((s,t)=>s+(t.anticipoMonto||0),0);
-  rows.push(['Total anticipos cobrados','',totalAnticipados]);
+  rows.push(['Ganancia neta','',{f:`ROUND(C${R_INGRESOS}+C${R_TOTAL_COSTOS},2)`}]);
   const wsFicha=XLSX.utils.aoa_to_sheet(rows);
   wsFicha['!cols']=[22,8,32,12,8,12,12,12,20].map(w=>({wch:w}));
+  // Red formatting for cost rows (column C = index 2)
+  const redStyle = {font:{color:{rgb:'FF0000'}}};
+  [R_OPERADORA, R_COMIDA, R_PULSOS_COSTO, R_NICO, R_TOTAL_COSTOS].forEach(r=>{
+    const cellRef = 'C'+r;
+    if(wsFicha[cellRef]) wsFicha[cellRef].s = redStyle;
+  });
   XLSX.utils.book_append_sheet(wb,wsFicha,'Ficha');
   const turnosRows=[['Cliente','Teléfono','Fecha','Hora','Zonas','Promo','Seña','Monto seña','Total','Notas']];
   [...turnos].sort((a,b)=>(a.fecha+a.hora)>(b.fecha+b.hora)?1:-1).forEach(t=>{
@@ -1153,7 +1165,7 @@ function exportarExcel(){
   wsTrat['!cols']=[8,24,12].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,wsTrat,'Tratamientos');
   const fechaFmt=fechaFiltro.split('-').reverse().join('-');
-  XLSX.writeFile(wb,'halime_'+fechaFmt+'.xlsx');
+  XLSX.writeFile(wb,'halime_'+fechaFmt+'.xlsx',{cellStyles:true});
   showAlert('✓ Ficha exportada');
 }
 
