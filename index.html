@@ -82,15 +82,12 @@ tr:hover td{background:#fdf9f7}
 .cp-swatch.active{border:2px solid #555;transform:scale(1.1)}
 .cp-divider{border:none;border-top:1px solid #f0e8e4;margin:6px 0}
 .cp-spectrum{width:100%;height:24px;border-radius:6px;border:1px solid #e0d8d2;cursor:pointer;padding:0}
-/* autocomplete dropdown */
 .autocomplete-wrap{position:relative}
 .autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0d8d2;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:100;max-height:200px;overflow-y:auto;margin-top:2px}
 .autocomplete-item{padding:9px 12px;cursor:pointer;font-size:14px;display:flex;justify-content:space-between;align-items:center}
 .autocomplete-item:hover{background:#fdf9f7}
 .autocomplete-item .ac-tel{font-size:12px;color:#a89890}
-/* tel badge in turno */
 .tel-badge{font-size:12px;color:#a89890;font-weight:400;margin-left:6px}
-/* ── EDIT MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
 .modal-box{background:#fff;border-radius:16px;padding:1.5rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
 .modal-title{font-size:16px;font-weight:500;color:#2a1a16;margin-bottom:1.2rem}
@@ -162,8 +159,6 @@ tr:hover td{background:#fdf9f7}
 
   <!-- NUEVO TURNO -->
   <div id="tab-nuevo" class="section active">
-
-    <!-- Barra fija del día -->
     <div style="background:#fff;border:1px solid #ede8e4;border-radius:12px;padding:1rem 1.4rem;margin-bottom:1rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
       <div style="font-size:12px;font-weight:600;color:#a89890;text-transform:uppercase;letter-spacing:0.6px;white-space:nowrap">Config. del día</div>
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px">
@@ -173,22 +168,18 @@ tr:hover td{background:#fdf9f7}
       <div style="width:1px;height:32px;background:#ede8e4"></div>
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px">
         <label style="font-size:13px;color:#7a6a64;font-weight:500;white-space:nowrap">💰 Anticipo</label>
-        <input type="number" id="anticipo-fijo" placeholder="0" min="0"
-          style="padding:7px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit;width:110px">
+        <input type="number" id="anticipo-fijo" placeholder="0" min="0" style="padding:7px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit;width:110px">
         <span style="font-size:12px;color:#a89890"></span>
       </div>
     </div>
 
     <div class="card">
       <div class="section-title">Datos del turno</div>
-
-      <!-- Nombre con autocomplete -->
       <div class="field autocomplete-wrap" style="margin-bottom:12px">
         <label>Nombre del cliente</label>
         <input type="text" id="f-cliente" placeholder="Ej: María López" oninput="onClienteInput()" onblur="cerrarAC()" autocomplete="off">
         <div id="ac-lista" class="autocomplete-list" style="display:none"></div>
       </div>
-
       <div class="field" style="margin-bottom:12px">
         <label>Hora del turno</label>
         <div id="hora-slots" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
@@ -199,7 +190,6 @@ tr:hover td{background:#fdf9f7}
         const slots=["09:00","09:20","09:40","10:00","10:20","10:40","11:00","11:20","11:40","12:00","12:20","12:40","13:00","13:20","13:40","14:00","14:20","14:40","15:00","15:20","15:40","16:00","16:20","16:40","17:00","17:20","17:40","18:00"];
         const cont=document.getElementById('hora-slots');
         if(!cont)return;
-
         function renderHoraSlots(){
           cont.innerHTML='';
           const fecha=document.getElementById('fecha-fija')?document.getElementById('fecha-fija').value:'';
@@ -224,7 +214,6 @@ tr:hover td{background:#fdf9f7}
             cont.appendChild(btn);
           });
         }
-
         setTimeout(renderHoraSlots,100);
         const ff=document.getElementById('fecha-fija');
         if(ff) ff.addEventListener('change',renderHoraSlots);
@@ -241,64 +230,41 @@ tr:hover td{background:#fdf9f7}
         <label>Notas</label>
         <textarea id="f-notas" placeholder="Observaciones del turno..."></textarea>
       </div>
-
       <div id="preview-box" style="display:none">
         <div class="section-title">Detalle</div>
         <div class="total-box">
           <div id="preview-detalle"></div>
-          <div class="total-row final">
-            <span>Total</span>
-            <span id="preview-total">$0</span>
-          </div>
-
+          <div class="total-row final"><span>Total</span><span id="preview-total">$0</span></div>
         </div>
       </div>
-
-      <!-- Anticipo + Promo -->
       <div style="margin-top:1rem;background:#fdf9f7;border:1px solid #ede8e4;border-radius:10px;padding:0.9rem 1rem;display:flex;flex-direction:column;gap:10px">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-          <!-- Anticipo -->
           <div style="display:flex;align-items:center;gap:8px">
             <input type="checkbox" id="f-anticipo-check" onchange="toggleAnticipo()" style="width:18px;height:18px;cursor:pointer;accent-color:#b8877a">
             <label for="f-anticipo-check" style="font-size:15px;cursor:pointer;color:#5a3800;font-weight:500">Pagó anticipo</label>
           </div>
-          <div id="f-anticipo-info" style="font-size:13px;color:#a89890">
-            Monto: <span id="f-anticipo-display" style="font-weight:600;color:#b8877a">$0</span>
-          </div>
-          <!-- Promo -->
+          <div id="f-anticipo-info" style="font-size:13px;color:#a89890">Monto: <span id="f-anticipo-display" style="font-weight:600;color:#b8877a">$0</span></div>
           <div style="display:flex;align-items:center;gap:8px;border-left:1px solid #ede8e4;padding-left:12px">
             <input type="checkbox" id="f-promo-check" onchange="togglePromo()" style="width:18px;height:18px;cursor:pointer;accent-color:#b8877a">
             <label for="f-promo-check" style="font-size:15px;cursor:pointer;color:#5a3800;font-weight:500">Promoción</label>
           </div>
           <div id="f-promo-wrap" style="display:none;align-items:center;gap:6px">
-            <input type="number" id="f-promo-pct" placeholder="%" min="0" max="100" oninput="actualizarPromo()"
-              style="width:70px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit;text-align:center">
+            <input type="number" id="f-promo-pct" placeholder="%" min="0" max="100" oninput="actualizarPromo()" style="width:70px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit;text-align:center">
             <span style="font-size:13px;color:#a89890">%</span>
           </div>
         </div>
-        <!-- Saldo y descuento -->
-        <!-- Redondeo -->
         <div style="display:flex;align-items:center;gap:8px;border-top:1px solid #ede8e4;padding-top:10px">
           <label style="font-size:15px;color:#5a3800;font-weight:500;white-space:nowrap">Redondeo</label>
           <span style="font-size:13px;color:#a89890">$</span>
-          <input type="number" id="f-redondeo" placeholder="0" oninput="actualizarTotalFinal()"
-            style="width:120px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+          <input type="number" id="f-redondeo" placeholder="0" oninput="actualizarTotalFinal()" style="width:120px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
           <span style="font-size:12px;color:#a89890">(se suma al total)</span>
         </div>
         <div style="display:flex;gap:1rem;flex-wrap:wrap">
-          <div id="f-saldo-wrap" style="display:none;font-size:13px;color:#a89890">
-            Saldo: <span id="f-saldo" style="font-weight:600;color:#b8877a;font-size:15px"></span>
-          </div>
-          <div id="f-descuento-wrap" style="display:none;font-size:13px;color:#a89890">
-            Descuento: <span id="f-descuento-monto" style="font-weight:600;color:#2d7a4a;font-size:15px"></span>
-            → Total con promo: <span id="f-total-promo" style="font-weight:600;color:#2d7a4a;font-size:15px"></span>
-          </div>
-          <div id="f-total-final-wrap" style="display:none;font-size:13px;color:#a89890">
-            Total final: <span id="f-total-final" style="font-weight:600;color:#b8877a;font-size:15px"></span>
-          </div>
+          <div id="f-saldo-wrap" style="display:none;font-size:13px;color:#a89890">Saldo: <span id="f-saldo" style="font-weight:600;color:#b8877a;font-size:15px"></span></div>
+          <div id="f-descuento-wrap" style="display:none;font-size:13px;color:#a89890">Descuento: <span id="f-descuento-monto" style="font-weight:600;color:#2d7a4a;font-size:15px"></span> → Total con promo: <span id="f-total-promo" style="font-weight:600;color:#2d7a4a;font-size:15px"></span></div>
+          <div id="f-total-final-wrap" style="display:none;font-size:13px;color:#a89890">Total final: <span id="f-total-final" style="font-weight:600;color:#b8877a;font-size:15px"></span></div>
         </div>
       </div>
-
       <div style="display:flex;gap:8px;margin-top:1.2rem">
         <button class="btn-primary" onclick="guardarTurno()">✓ Guardar turno</button>
         <button class="btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
@@ -326,30 +292,16 @@ tr:hover td{background:#fdf9f7}
     <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Agregar cliente</div>
       <div class="grid2" style="margin-bottom:10px">
-        <div class="field">
-          <label>Nombre completo</label>
-          <input type="text" id="c-nombre" placeholder="Ej: Julieta Romero">
-        </div>
-        <div class="field">
-          <label>Teléfono</label>
-          <input type="text" id="c-telefono" placeholder="Ej: 1123456789">
-        </div>
+        <div class="field"><label>Nombre completo</label><input type="text" id="c-nombre" placeholder="Ej: Julieta Romero"></div>
+        <div class="field"><label>Teléfono</label><input type="text" id="c-telefono" placeholder="Ej: 1123456789"></div>
       </div>
-      <div class="field" style="margin-bottom:10px">
-        <label>Email (opcional)</label>
-        <input type="email" id="c-mail" placeholder="Ej: julieta@gmail.com">
-      </div>
+      <div class="field" style="margin-bottom:10px"><label>Email (opcional)</label><input type="email" id="c-mail" placeholder="Ej: julieta@gmail.com"></div>
       <button class="btn-primary" onclick="agregarCliente()">+ Agregar</button>
     </div>
     <div class="card">
       <div class="section-title">Lista de clientes</div>
-      <div class="filter-row" style="margin-bottom:1rem">
-        <input type="text" id="filtro-clientes-buscar" placeholder="Buscar..." oninput="renderClientes()" style="flex:1">
-      </div>
-      <table>
-        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th></th></tr></thead>
-        <tbody id="tbody-clientes"></tbody>
-      </table>
+      <div class="filter-row" style="margin-bottom:1rem"><input type="text" id="filtro-clientes-buscar" placeholder="Buscar..." oninput="renderClientes()" style="flex:1"></div>
+      <table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th></th></tr></thead><tbody id="tbody-clientes"></tbody></table>
     </div>
   </div>
 
@@ -358,33 +310,21 @@ tr:hover td{background:#fdf9f7}
     <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Agregar zona</div>
       <div style="display:grid;grid-template-columns:90px 1fr 120px auto auto;gap:10px;align-items:end">
-        <div class="field">
-          <label>Sigla</label>
-          <input type="text" id="t-sigla" placeholder="AX" style="text-transform:uppercase">
-        </div>
-        <div class="field">
-          <label>Nombre</label>
-          <input type="text" id="t-nombre" placeholder="Ej: Axilas completas">
-        </div>
-        <div class="field">
-          <label>Precio ($)</label>
-          <input type="number" id="t-precio" placeholder="12000" min="0">
-        </div>
-        <div class="field">
-          <label>Color</label>
-          <input type="color" id="t-color" value="#f5ede9" style="width:42px;height:38px;border:1px solid #e0d8d2;border-radius:8px;padding:3px;cursor:pointer;background:#fff">
-        </div>
+        <div class="field"><label>Sigla</label><input type="text" id="t-sigla" placeholder="AX" style="text-transform:uppercase"></div>
+        <div class="field"><label>Nombre</label><input type="text" id="t-nombre" placeholder="Ej: Axilas completas"></div>
+        <div class="field"><label>Precio ($)</label><input type="number" id="t-precio" placeholder="12000" min="0"></div>
+        <div class="field"><label>Color</label><input type="color" id="t-color" value="#f5ede9" style="width:42px;height:38px;border:1px solid #e0d8d2;border-radius:8px;padding:3px;cursor:pointer;background:#fff"></div>
         <button class="btn-primary" onclick="agregarTratamiento()" style="height:38px;align-self:end;white-space:nowrap">+ Agregar</button>
       </div>
       <div style="margin-top:12px;font-size:12px;color:#a89890">
-        Colores sugeridos por categoría:
-        <span class="color-preset" onclick="setColor('#fce4ec')" style="background:#fce4ec" title="Rosa — zonas femeninas"></span>
-        <span class="color-preset" onclick="setColor('#e3f2fd')" style="background:#e3f2fd" title="Azul — zonas masculinas"></span>
-        <span class="color-preset" onclick="setColor('#fff8e1')" style="background:#fff8e1" title="Dorado — promos"></span>
-        <span class="color-preset" onclick="setColor('#e8f5e9')" style="background:#e8f5e9" title="Verde — paquetes"></span>
-        <span class="color-preset" onclick="setColor('#f3e5f5')" style="background:#f3e5f5" title="Lila — rostro"></span>
-        <span class="color-preset" onclick="setColor('#f5ede9')" style="background:#f5ede9" title="Nude — default"></span>
-        <span class="color-preset" onclick="setColor('#ffe0b2')" style="background:#ffe0b2" title="Naranja — especiales"></span>
+        Colores sugeridos:
+        <span class="color-preset" onclick="setColor('#fce4ec')" style="background:#fce4ec"></span>
+        <span class="color-preset" onclick="setColor('#e3f2fd')" style="background:#e3f2fd"></span>
+        <span class="color-preset" onclick="setColor('#fff8e1')" style="background:#fff8e1"></span>
+        <span class="color-preset" onclick="setColor('#e8f5e9')" style="background:#e8f5e9"></span>
+        <span class="color-preset" onclick="setColor('#f3e5f5')" style="background:#f3e5f5"></span>
+        <span class="color-preset" onclick="setColor('#f5ede9')" style="background:#f5ede9"></span>
+        <span class="color-preset" onclick="setColor('#ffe0b2')" style="background:#ffe0b2"></span>
       </div>
     </div>
     <div class="card">
@@ -399,31 +339,18 @@ tr:hover td{background:#fdf9f7}
 
 <!-- COSTOS DEL DÍA -->
   <div id="tab-costos" class="section">
-
-    <!-- Fecha del día -->
     <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Fecha del registro</div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div class="field" style="flex:1;min-width:160px">
-          <label>Fecha</label>
-          <input type="date" id="co-fecha">
-        </div>
+        <div class="field" style="flex:1;min-width:160px"><label>Fecha</label><input type="date" id="co-fecha"></div>
         <div style="font-size:13px;color:#a89890;margin-top:18px">Los costos se guardan por fecha. Podés cambiar la fecha para ver o editar otro día.</div>
       </div>
     </div>
-
-    <!-- Operadora -->
     <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Operadora</div>
       <div class="grid2" style="margin-bottom:10px">
-        <div class="field">
-          <label>Hora de entrada</label>
-          <input type="time" id="co-entrada" oninput="calcCostos()">
-        </div>
-        <div class="field">
-          <label>Hora de salida</label>
-          <input type="time" id="co-salida" oninput="calcCostos()">
-        </div>
+        <div class="field"><label>Hora de entrada</label><input type="time" id="co-entrada" oninput="calcCostos()"></div>
+        <div class="field"><label>Hora de salida</label><input type="time" id="co-salida" oninput="calcCostos()"></div>
       </div>
       <div class="grid2" style="margin-bottom:10px">
         <div class="field">
@@ -436,59 +363,35 @@ tr:hover td{background:#fdf9f7}
           </label>
           <input type="number" id="co-precio-hora" placeholder="0" min="0" oninput="calcCostos();if(document.getElementById('co-precio-hora-fijo').checked)localStorage.setItem('halime_precio_hora_fijo',this.value)">
         </div>
-        <div class="field">
-          <label>Redondeo ($)</label>
-          <input type="number" id="co-redondeo" placeholder="0" oninput="calcCostos()">
-        </div>
+        <div class="field"><label>Redondeo ($)</label><input type="number" id="co-redondeo" placeholder="0" oninput="calcCostos()"></div>
       </div>
       <div id="co-horas-info" style="font-size:13px;color:#a89890"></div>
     </div>
-
-    <!-- Comida -->
     <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Comida</div>
-      <div class="field">
-        <label>Gasto en comida ($)</label>
-        <input type="number" id="co-comida" placeholder="0" min="0" oninput="calcCostos()">
-      </div>
+      <div class="field"><label>Gasto en comida ($)</label><input type="number" id="co-comida" placeholder="0" min="0" oninput="calcCostos()"></div>
     </div>
-
-    <!-- Pulsos -->
     <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Pulsos</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-        <div class="field">
-          <label>Pulsos inicio</label>
-          <input type="number" id="co-pulsos-inicio" placeholder="0" min="0" oninput="calcCostos()">
-        </div>
-        <div class="field">
-          <label>Pulsos cierre</label>
-          <input type="number" id="co-pulsos-cierre" placeholder="0" min="0" oninput="calcCostos()">
-        </div>
+        <div class="field"><label>Pulsos inicio</label><input type="number" id="co-pulsos-inicio" placeholder="0" min="0" oninput="calcCostos()"></div>
+        <div class="field"><label>Pulsos cierre</label><input type="number" id="co-pulsos-cierre" placeholder="0" min="0" oninput="calcCostos()"></div>
         <div class="field">
           <label>Precio pulso ($) <span style="font-size:11px;color:#c9a96e">(fijo)</span></label>
           <input type="number" id="co-precio-pulso" value="1.311" step="0.001" readonly style="background:#f5f0eb;color:#a89890;cursor:not-allowed">
         </div>
-        <div class="field">
-          <label>Valor del dólar ($)</label>
-          <input type="number" id="co-dolar" placeholder="0" min="0" oninput="calcCostos()">
-        </div>
+        <div class="field"><label>Valor del dólar ($)</label><input type="number" id="co-dolar" placeholder="0" min="0" oninput="calcCostos()"></div>
       </div>
       <div style="font-size:13px;color:#a89890" id="co-pulsos-total-info"></div>
     </div>
-
-    <!-- Resumen del día -->
     <div class="card">
       <div class="section-title">Resumen del día</div>
-      <div id="co-resumen">
-        <div style="text-align:center;color:#a89890;font-size:13px;padding:1rem">Completá los campos para ver el resumen.</div>
-      </div>
+      <div id="co-resumen"><div style="text-align:center;color:#a89890;font-size:13px;padding:1rem">Completá los campos para ver el resumen.</div></div>
       <div style="display:flex;gap:8px;margin-top:1.2rem">
         <button class="btn-primary" onclick="guardarCostos()">✓ Guardar registro</button>
         <button class="btn-secondary" onclick="limpiarCostos()">Limpiar</button>
       </div>
     </div>
-
   </div>
 
 <!-- WA MODAL -->
@@ -501,7 +404,6 @@ tr:hover td{background:#fdf9f7}
       <div style="display:flex;gap:8px;align-items:center">
         <span style="font-size:13px;color:#5a3800;padding:9px 10px;background:#fdf9f7;border:1px solid #e0d8d2;border-radius:8px;white-space:nowrap">+54 9</span>
         <input type="text" id="wa-numero" placeholder="Ej: 1123456789" style="flex:1;padding:9px 10px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
-        <div style="font-size:11px;color:#a89890;margin-top:4px">Ingresá solo el número sin código de país</div>
       </div>
     </div>
     <div class="field" style="margin-bottom:1.2rem">
@@ -540,31 +442,18 @@ tr:hover td{background:#fdf9f7}
 <div id="edit-modal" class="modal-overlay" style="display:none" onclick="cerrarModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-title">Editar turno</div>
-    <div class="field" style="margin-bottom:10px">
-      <label>Nombre del cliente</label>
-      <input type="text" id="em-cliente">
-    </div>
+    <div class="field" style="margin-bottom:10px"><label>Nombre del cliente</label><input type="text" id="em-cliente"></div>
     <div class="grid2" style="margin-bottom:10px">
-      <div class="field">
-        <label>Fecha</label>
-        <input type="date" id="em-fecha">
-      </div>
-      <div class="field">
-        <label>Hora</label>
-        <input type="time" id="em-hora">
-      </div>
+      <div class="field"><label>Fecha</label><input type="date" id="em-fecha"></div>
+      <div class="field"><label>Hora</label><input type="time" id="em-hora"></div>
     </div>
     <div class="field" style="margin-bottom:10px">
       <label>Zonas</label>
       <div id="em-siglas-btns" class="modal-siglas"></div>
       <input type="hidden" id="em-siglas">
     </div>
-    <div class="field" style="margin-bottom:10px">
-      <label>Notas</label>
-      <textarea id="em-notas" style="min-height:48px"></textarea>
-    </div>
+    <div class="field" style="margin-bottom:10px"><label>Notas</label><textarea id="em-notas" style="min-height:48px"></textarea></div>
     <div id="em-preview" style="font-size:13px;color:#a89890;margin-bottom:10px"></div>
-    <!-- Anticipo en edición -->
     <div style="background:#fdf9f7;border:1px solid #ede8e4;border-radius:10px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;flex-wrap:wrap;gap:12px">
       <div style="display:flex;align-items:center;gap:8px">
         <input type="checkbox" id="em-anticipo-check" onchange="actualizarEmAnticipo()" style="width:16px;height:16px;cursor:pointer;accent-color:#b8877a">
@@ -572,12 +461,26 @@ tr:hover td{background:#fdf9f7}
       </div>
       <div id="em-anticipo-wrap" style="display:none;align-items:center;gap:6px">
         <span style="font-size:13px;color:#a89890">$</span>
-        <input type="number" id="em-anticipo-monto" placeholder="0" min="0" oninput="actualizarEmSaldo()"
-          style="width:110px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+        <input type="number" id="em-anticipo-monto" placeholder="0" min="0" oninput="actualizarEmSaldo()" style="width:110px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
       </div>
-      <div id="em-saldo-wrap" style="display:none;font-size:13px;color:#a89890;margin-left:auto">
-        Saldo: <span id="em-saldo" style="font-weight:600;color:#b8877a"></span>
+      <div id="em-saldo-wrap" style="display:none;font-size:13px;color:#a89890;margin-left:auto">Saldo: <span id="em-saldo" style="font-weight:600;color:#b8877a"></span></div>
+    </div>
+    <!-- Descuento en edición -->
+    <div style="background:#fdf9f7;border:1px solid #ede8e4;border-radius:10px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="em-promo-check" onchange="actualizarEmPromo()" style="width:16px;height:16px;cursor:pointer;accent-color:#b8877a">
+        <label for="em-promo-check" style="font-size:14px;cursor:pointer;color:#5a3800;font-weight:500">Descuento</label>
       </div>
+      <div id="em-promo-wrap" style="display:none;align-items:center;gap:6px">
+        <input type="number" id="em-promo-pct" placeholder="0" min="0" max="100" oninput="actualizarEmPromo()" style="width:70px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+        <span style="font-size:13px;color:#a89890">%</span>
+      </div>
+      <div id="em-promo-total" style="display:none;font-size:13px;color:#a89890;margin-left:auto">Total con descuento: <span id="em-promo-resultado" style="font-weight:600;color:#b8877a"></span></div>
+    </div>
+    <!-- Redondeo en edición -->
+    <div style="background:#fdf9f7;border:1px solid #ede8e4;border-radius:10px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px">
+      <label style="font-size:14px;color:#5a3800;font-weight:500;min-width:90px">Redondeo ($)</label>
+      <input type="number" id="em-redondeo" placeholder="0" oninput="actualizarEmPromo()" style="width:110px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
@@ -622,39 +525,20 @@ const DEFAULT_TRATAMIENTOS = [
   {sigla:'PEH',nombre:'Pierna Entera Hombre',precio:31000,color:'#00bcd4'},
   {sigla:'PVH',nombre:'Pelvis Hombre',        precio:17000,color:'#00bcd4'},
 ];
-// ── SUPABASE ──
+
 const SB_URL='https://nehrkxpxtopswpcpoyon.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5laHJreHB4dG9wc3dwY3BveW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjYwMDksImV4cCI6MjA5NjYwMjAwOX0.S6dYUcATeOpgMA-1uIibygecOVh5lXygv8yQO1556Uo';
 const SB_HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
-async function sbGet(table,params=''){
-  const r=await fetch(SB_URL+'/rest/v1/'+table+params,{headers:SB_HEADERS});
-  return r.json();
-}
-async function sbPost(table,body){
-  const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(body)});
-  return r.ok;
-}
-async function sbDelete(table,params){
-  const r=await fetch(SB_URL+'/rest/v1/'+table+params,{method:'DELETE',headers:SB_HEADERS});
-  return r.ok;
-}
+async function sbGet(table,params=''){const r=await fetch(SB_URL+'/rest/v1/'+table+params,{headers:SB_HEADERS});return r.json();}
+async function sbPost(table,body){const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(body)});return r.ok;}
+async function sbDelete(table,params){const r=await fetch(SB_URL+'/rest/v1/'+table+params,{method:'DELETE',headers:SB_HEADERS});return r.ok;}
 async function sbUpsert(table,body){
   try{
-    const r=await fetch(SB_URL+'/rest/v1/'+table,{
-      method:'POST',
-      headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify(body)
-    });
-    if(!r.ok){
-      const txt=await r.text();
-      console.error('sbUpsert error en '+table+':',r.status,txt);
-    }
+    const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+    if(!r.ok){const txt=await r.text();console.error('sbUpsert error en '+table+':',r.status,txt);}
     return r.ok;
-  }catch(e){
-    console.error('sbUpsert exception en '+table+':',e);
-    return false;
-  }
+  }catch(e){console.error('sbUpsert exception en '+table+':',e);return false;}
 }
 
 function mapTurnoFromSB(r){return{id:r.id,cliente:r.cliente,telefono:r.telefono||'',fecha:r.fecha,hora:r.hora||'',siglas:r.siglas||'[]',notas:r.notas||'',anticipo:r.anticipo||false,anticipoMonto:r.anticipo_monto||0,promo:r.promo||false,promoPct:r.promo_pct||0,redondeo:r.redondeo||0,totalFinal:r.total_final||0,creado:r.creado||''};}
@@ -672,69 +556,42 @@ async function cargarDesdeSB(){
     ]);
     if(Array.isArray(t) && t.length) turnos=t.map(mapTurnoFromSB);
     if(Array.isArray(c) && c.length) clientes=c.map(mapClienteFromSB);
-    if(Array.isArray(tr)&&tr.length){
-      tratamientos=tr.map(mapTratFromSB);
-    } else if(tr.length===0){
-      // SB is empty - save current defaults to SB
-      await guardarTratamientosSB();
-    }
-    // never overwrite tratamientos if SB returns error or null
+    if(Array.isArray(tr)&&tr.length){tratamientos=tr.map(mapTratFromSB);}
+    else if(Array.isArray(tr)&&tr.length===0){await guardarTratamientosSB();}
     if(Array.isArray(co)) co.forEach(d=>{costos[d.fecha]=mapCostoFromSB(d);});
   }catch(e){console.error('SB error:',e);}
 }
 
-async function guardarTurnoSB(t){
-  return sbUpsert('turnos',{id:t.id,cliente:t.cliente,telefono:t.telefono||'',fecha:t.fecha,hora:t.hora||'',siglas:t.siglas,notas:t.notas||'',anticipo:t.anticipo||false,anticipo_monto:t.anticipoMonto||0,promo:t.promo||false,promo_pct:t.promoPct||0,redondeo:t.redondeo||0,total_final:t.totalFinal||0,creado:t.creado||''});
-}
+async function guardarTurnoSB(t){return sbUpsert('turnos',{id:t.id,cliente:t.cliente,telefono:t.telefono||'',fecha:t.fecha,hora:t.hora||'',siglas:t.siglas,notas:t.notas||'',anticipo:t.anticipo||false,anticipo_monto:t.anticipoMonto||0,promo:t.promo||false,promo_pct:t.promoPct||0,redondeo:t.redondeo||0,total_final:t.totalFinal||0,creado:t.creado||''});}
 async function eliminarTurnoSB(id){return sbDelete('turnos','?id=eq.'+id);}
 async function guardarClienteSB(c){return sbUpsert('clientes',{nombre:c.nombre,telefono:c.telefono||'',mail:c.mail||''});}
 async function eliminarClienteSB(nombre){return sbDelete('clientes','?nombre=eq.'+encodeURIComponent(nombre));}
 async function eliminarTratamientoSB(sigla){
-  try{
-    const r=await fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(sigla),{
-      method:'DELETE',
-      headers:SB_HEADERS
-    });
-    return r.ok;
-  }catch(e){console.error('Error eliminando zona:',e);return false;}
+  try{const r=await fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(sigla),{method:'DELETE',headers:SB_HEADERS});return r.ok;}
+  catch(e){console.error('Error eliminando zona:',e);return false;}
 }
 async function guardarTratamientosSB(){
-  // PATCH each zone individually to update all fields including orden
-  const results = await Promise.all(tratamientos.map((t,i)=>
-    fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(t.sigla),{
-      method:'PATCH',
-      headers:{...SB_HEADERS,'Prefer':'return=minimal'},
-      body:JSON.stringify({nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i})
-    }).then(r=>{
-      if(!r.ok) console.error('PATCH failed para',t.sigla,r.status);
-      return r.ok;
-    })
+  const results=await Promise.all(tratamientos.map((t,i)=>
+    fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(t.sigla),{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i})})
+    .then(r=>{if(!r.ok)console.error('PATCH failed para',t.sigla,r.status);return r.ok;})
   ));
   return results.every(Boolean);
 }
-
-async function insertarTratamientoSB(t, orden){
-  const r = await fetch(SB_URL+'/rest/v1/tratamientos',{
-    method:'POST',
-    headers:{...SB_HEADERS,'Prefer':'return=minimal'},
-    body:JSON.stringify({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden})
-  });
+async function insertarTratamientoSB(t,orden){
+  const r=await fetch(SB_URL+'/rest/v1/tratamientos',{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden})});
   if(!r.ok){const txt=await r.text();console.error('INSERT failed para',t.sigla,r.status,txt);}
   return r.ok;
 }
-async function guardarCostosSB(fecha,d){
-  return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});
-}
-// ── FIN SUPABASE ──
+async function guardarCostosSB(fecha,d){return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});}
 
-let tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || DEFAULT_TRATAMIENTOS;
-let turnos       = JSON.parse(localStorage.getItem('halime_turnos')       || '[]');
-let clientes     = JSON.parse(localStorage.getItem('halime_clientes')     || '[]');
+let tratamientos=JSON.parse(localStorage.getItem('halime_tratamientos')||'null')||DEFAULT_TRATAMIENTOS;
+let turnos=JSON.parse(localStorage.getItem('halime_turnos')||'[]');
+let clientes=JSON.parse(localStorage.getItem('halime_clientes')||'[]');
 
-function guardar(){ /* data saved directly to Supabase */ }
-function guardarCostosData(){ /* data saved directly to Supabase */ }
+function guardar(){}
+function guardarCostosData(){}
 
-function showTab(t, btn){
+function showTab(t,btn){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
@@ -744,19 +601,18 @@ function showTab(t, btn){
   if(t==='agenda'){renderAgenda();renderStats();}
   if(t==='zonas'){renderTratamientos();}
   if(t==='clientes'){renderClientes();}
-  if(t==='costos'){calcCostos();}
+  if(t==='costos'){calcCostos();initPrecioHoraFijo();}
 }
 
-function showAlert(msg, tipo='success'){
+function showAlert(msg,tipo='success'){
   const t=document.getElementById('toast');
-  if(!t) return;
+  if(!t)return;
   t.textContent=msg;
   t.className='toast toast-'+tipo+' show';
   clearTimeout(t._timer);
-  t._timer=setTimeout(()=>{t.className='toast';}, 3000);
+  t._timer=setTimeout(()=>{t.className='toast';},3000);
 }
 
-/* ── AUTOCOMPLETE CLIENTES ── */
 let acTimeout=null;
 function onClienteInput(){
   clearTimeout(acTimeout);
@@ -764,67 +620,37 @@ function onClienteInput(){
     const val=document.getElementById('f-cliente').value.trim().toLowerCase();
     const lista=document.getElementById('ac-lista');
     if(!val||val.length<1){lista.style.display='none';return;}
-    // reload clientes from storage in case they were added recently
     const cList=JSON.parse(localStorage.getItem('halime_clientes')||'[]');
     const matches=cList.filter(c=>c.nombre.toLowerCase().includes(val));
     if(!matches.length){lista.style.display='none';return;}
     lista.style.display='block';
-    lista.innerHTML=matches.map(c=>`
-      <div class="autocomplete-item" onmousedown="seleccionarCliente('${escapar(c.nombre)}','${escapar(c.telefono||'')}')">
-        <span>${c.nombre}</span>
-        <span class="ac-tel">${c.telefono||''}</span>
-      </div>`).join('');
+    lista.innerHTML=matches.map(c=>`<div class="autocomplete-item" onmousedown="seleccionarCliente('${escapar(c.nombre)}','${escapar(c.telefono||'')}')"><span>${c.nombre}</span><span class="ac-tel">${c.telefono||''}</span></div>`).join('');
   },100);
 }
+function escapar(s){return(s||'').replace(/'/g,"\\'");}
+function seleccionarCliente(nombre,tel){document.getElementById('f-cliente').value=nombre;cerrarAC();}
+function cerrarAC(){setTimeout(()=>{const l=document.getElementById('ac-lista');if(l)l.style.display='none';},150);}
 
-function escapar(s){ return (s||'').replace(/'/g,"\\'"); }
-
-function seleccionarCliente(nombre, tel){
-  document.getElementById('f-cliente').value=nombre;
-  cerrarAC();
-}
-
-function cerrarAC(){
-  // pequeño delay para que el mousedown se ejecute primero
-  setTimeout(()=>{
-    const l=document.getElementById('ac-lista');
-    if(l) l.style.display='none';
-  },150);
-}
-
-/* ── SIGLAS ── */
 function parsearSiglas(texto){
-  if(!texto||!texto.trim()) return [];
-  try{
-    const arr=JSON.parse(texto);
-    if(Array.isArray(arr)) return arr;
-  }catch(e){}
-  // fallback for legacy space-separated
+  if(!texto||!texto.trim())return[];
+  try{const arr=JSON.parse(texto);if(Array.isArray(arr))return arr;}catch(e){}
   return texto.toUpperCase().split(/[\s,+]+/).filter(s=>s.length>0);
 }
-
-function siglasSerialized(arr){
-  return JSON.stringify(arr);
-}
+function siglasSerialized(arr){return JSON.stringify(arr);}
 
 function calcularTurno(siglasTexto){
   const siglas=parsearSiglas(siglasTexto);
-  // count quantities
   const conteo={};
-  siglas.forEach(s=>{ conteo[s]=(conteo[s]||0)+1; });
+  siglas.forEach(s=>{conteo[s]=(conteo[s]||0)+1;});
   const unicas=Object.keys(conteo);
-  let items=[], total=0;
+  let items=[],total=0;
   unicas.forEach(s=>{
     const t=tratamientos.find(x=>x.sigla===s);
     const qty=conteo[s]||1;
-    if(t){
-      items.push({sigla:s,nombre:t.nombre,precio:t.precio,qty});
-      total+=t.precio*qty;
-    } else if(s){
-      items.push({sigla:s,nombre:'No encontrado',precio:0,qty});
-    }
+    if(t){items.push({sigla:s,nombre:t.nombre,precio:t.precio,qty});total+=t.precio*qty;}
+    else if(s){items.push({sigla:s,nombre:'No encontrado',precio:0,qty});}
   });
-  return {items,total};
+  return{items,total};
 }
 
 function colorDark(hex){
@@ -835,29 +661,19 @@ function colorDark(hex){
 }
 
 function renderSiglasButtons(){
-  // reload from localStorage every time in case it was updated
-  tratamientos = JSON.parse(localStorage.getItem('halime_tratamientos') || 'null') || tratamientos;
+  tratamientos=JSON.parse(localStorage.getItem('halime_tratamientos')||'null')||tratamientos;
   const el=document.getElementById('f-siglas');
-  const seleccionadas=el ? parsearSiglas(el.value) : [];
+  const seleccionadas=el?parsearSiglas(el.value):[];
   const sugs=document.getElementById('siglas-sugeridas');
-  if(!sugs) return;
-  if(!tratamientos.length){
-    sugs.innerHTML='<div style="font-size:13px;color:#a89890;padding:4px">No hay zonas cargadas. Agregá desde la solapa Zonas.</div>';
-    return;
-  }
+  if(!sugs)return;
+  if(!tratamientos.length){sugs.innerHTML='<div style="font-size:13px;color:#a89890;padding:4px">No hay zonas cargadas.</div>';return;}
   sugs.innerHTML=tratamientos.map(t=>{
     const activo=seleccionadas.includes(t.sigla);
     const esc=t.sigla.replace(/'/g,"\\'");
     const color=t.color||'#f5ede9';
     const dark=colorDark(color);
-    const bgStyle=activo
-      ? `background:${dark};border-color:${dark};color:#fff`
-      : `background:${color};border-color:${color};color:${dark}`;
-    return `<span class="sigla-btn" style="${bgStyle}" onclick="toggleSigla('${esc}')">
-      <span style="font-weight:700;font-size:16px">${t.sigla}</span>
-      <span class="sb-nombre" style="opacity:0.9;font-size:13px;font-weight:500">${t.nombre}</span>
-      <span style="font-size:13px;font-weight:600;opacity:0.85;margin-top:2px">$${t.precio.toLocaleString('es-AR')}</span>
-    </span>`;
+    const bgStyle=activo?`background:${dark};border-color:${dark};color:#fff`:`background:${color};border-color:${color};color:${dark}`;
+    return `<span class="sigla-btn" style="${bgStyle}" onclick="toggleSigla('${esc}')"><span style="font-weight:700;font-size:16px">${t.sigla}</span><span class="sb-nombre" style="opacity:0.9;font-size:13px;font-weight:500">${t.nombre}</span><span style="font-size:13px;font-weight:600;opacity:0.85;margin-top:2px">$${t.precio.toLocaleString('es-AR')}</span></span>`;
   }).join('');
 }
 
@@ -866,20 +682,15 @@ function calcularPreview(){
   const box=document.getElementById('preview-box');
   renderSiglasButtons();
   if(!texto.trim()){box.style.display='none';return;}
-  const {items,total}=calcularTurno(texto);
+  const{items,total}=calcularTurno(texto);
   box.style.display='block';
   document.getElementById('preview-detalle').innerHTML=items.map(i=>`
     <div class="total-row" style="gap:8px">
-      <span style="display:flex;align-items:center;gap:6px;flex:1">
-        <span class="sigla-badge">${i.sigla}</span>
-        <span>${i.nombre}</span>
-      </span>
+      <span style="display:flex;align-items:center;gap:6px;flex:1"><span class="sigla-badge">${i.sigla}</span><span>${i.nombre}</span></span>
       <span style="display:flex;align-items:center;gap:6px">
-        <button type="button" onclick="cambiarQty('${i.sigla}',-1)"
-          style="width:24px;height:24px;border-radius:50%;border:1px solid #e0d8d2;background:#fff;cursor:pointer;font-size:14px;line-height:1;color:#5a3800;display:flex;align-items:center;justify-content:center">−</button>
+        <button type="button" onclick="cambiarQty('${i.sigla}',-1)" style="width:24px;height:24px;border-radius:50%;border:1px solid #e0d8d2;background:#fff;cursor:pointer;font-size:14px;line-height:1;color:#5a3800;display:flex;align-items:center;justify-content:center">−</button>
         <span style="min-width:20px;text-align:center;font-weight:600">${i.qty>1?'×'+i.qty:''}</span>
-        <button type="button" onclick="cambiarQty('${i.sigla}',1)"
-          style="width:24px;height:24px;border-radius:50%;border:1px solid #e0d8d2;background:#fff;cursor:pointer;font-size:14px;line-height:1;color:#5a3800;display:flex;align-items:center;justify-content:center">+</button>
+        <button type="button" onclick="cambiarQty('${i.sigla}',1)" style="width:24px;height:24px;border-radius:50%;border:1px solid #e0d8d2;background:#fff;cursor:pointer;font-size:14px;line-height:1;color:#5a3800;display:flex;align-items:center;justify-content:center">+</button>
         <span class="price" style="min-width:70px;text-align:right">${i.precio>0?'$'+(i.precio*i.qty).toLocaleString('es-AR'):'—'}</span>
       </span>
     </div>`).join('');
@@ -889,214 +700,131 @@ function calcularPreview(){
 }
 
 function actualizarDisplayAnticipo(){
-  const monto = parseFloat(document.getElementById('anticipo-fijo')?.value)||0;
-  const el = document.getElementById('f-anticipo-display');
-  if(el) el.textContent = '$'+monto.toLocaleString('es-AR');
+  const monto=parseFloat(document.getElementById('anticipo-fijo')?.value)||0;
+  const el=document.getElementById('f-anticipo-display');
+  if(el)el.textContent='$'+monto.toLocaleString('es-AR');
 }
-
-function toggleAnticipo(){
-  actualizarDisplayAnticipo();
-  actualizarSaldo();
-}
-
+function toggleAnticipo(){actualizarDisplayAnticipo();actualizarSaldo();}
 function togglePromo(){
-  const check = document.getElementById('f-promo-check');
-  const wrap = document.getElementById('f-promo-wrap');
-  if(!wrap) return;
-  wrap.style.display = check.checked ? 'flex' : 'none';
-  if(!check.checked){
-    const dw=document.getElementById('f-descuento-wrap');
-    if(dw) dw.style.display='none';
-    const pp=document.getElementById('f-promo-pct');
-    if(pp) pp.value='';
-  }
+  const check=document.getElementById('f-promo-check');
+  const wrap=document.getElementById('f-promo-wrap');
+  if(!wrap)return;
+  wrap.style.display=check.checked?'flex':'none';
+  if(!check.checked){const dw=document.getElementById('f-descuento-wrap');if(dw)dw.style.display='none';const pp=document.getElementById('f-promo-pct');if(pp)pp.value='';}
   actualizarPromo();
 }
-
 function actualizarTotalFinal(){
-  const totalEl = document.getElementById('preview-total');
-  const total = totalEl ? parseFloat(totalEl.textContent.replace(/[^0-9]/g,''))||0 : 0;
-  const promoCheck = document.getElementById('f-promo-check');
-  const promoPct = promoCheck&&promoCheck.checked ? (parseFloat(document.getElementById('f-promo-pct').value)||0) : 0;
-  const redondeo = parseFloat(document.getElementById('f-redondeo')?.value)||0;
-  const descuento = Math.round(total * promoPct / 100);
-  const totalFinal = total - descuento + redondeo;
-  const wrap = document.getElementById('f-total-final-wrap');
-  const el = document.getElementById('f-total-final');
-  if(wrap && el){
-    if(redondeo !== 0 || promoPct > 0){
-      el.textContent = '$'+totalFinal.toLocaleString('es-AR');
-      wrap.style.display = 'block';
-    } else {
-      wrap.style.display = 'none';
-    }
-  }
+  const totalEl=document.getElementById('preview-total');
+  const total=totalEl?parseFloat(totalEl.textContent.replace(/[^0-9]/g,''))||0:0;
+  const promoCheck=document.getElementById('f-promo-check');
+  const promoPct=promoCheck&&promoCheck.checked?(parseFloat(document.getElementById('f-promo-pct').value)||0):0;
+  const redondeo=parseFloat(document.getElementById('f-redondeo')?.value)||0;
+  const descuento=Math.round(total*promoPct/100);
+  const totalFinal=total-descuento+redondeo;
+  const wrap=document.getElementById('f-total-final-wrap');
+  const el=document.getElementById('f-total-final');
+  if(wrap&&el){if(redondeo!==0||promoPct>0){el.textContent='$'+totalFinal.toLocaleString('es-AR');wrap.style.display='block';}else{wrap.style.display='none';}}
   actualizarSaldo();
 }
-
 function actualizarPromo(){
-  const check = document.getElementById('f-promo-check');
-  const dWrap = document.getElementById('f-descuento-wrap');
+  const check=document.getElementById('f-promo-check');
+  const dWrap=document.getElementById('f-descuento-wrap');
   if(!check||!check.checked){if(dWrap)dWrap.style.display='none';return;}
-  const pct = parseFloat(document.getElementById('f-promo-pct').value)||0;
-  const totalEl = document.getElementById('preview-total');
-  const total = totalEl ? parseFloat(totalEl.textContent.replace(/[^0-9]/g,''))||0 : 0;
+  const pct=parseFloat(document.getElementById('f-promo-pct').value)||0;
+  const totalEl=document.getElementById('preview-total');
+  const total=totalEl?parseFloat(totalEl.textContent.replace(/[^0-9]/g,''))||0:0;
   if(!total||!pct){if(dWrap)dWrap.style.display='none';return;}
-  const descuento = Math.round(total * pct / 100);
-  const totalPromo = total - descuento;
-  document.getElementById('f-descuento-monto').textContent = '-$'+descuento.toLocaleString('es-AR');
-  document.getElementById('f-total-promo').textContent = '$'+totalPromo.toLocaleString('es-AR');
-  if(dWrap) dWrap.style.display = 'block';
+  const descuento=Math.round(total*pct/100);
+  const totalPromo=total-descuento;
+  document.getElementById('f-descuento-monto').textContent='-$'+descuento.toLocaleString('es-AR');
+  document.getElementById('f-total-promo').textContent='$'+totalPromo.toLocaleString('es-AR');
+  if(dWrap)dWrap.style.display='block';
   actualizarTotalFinal();
 }
-
 function actualizarSaldo(){
-  const check = document.getElementById('f-anticipo-check');
-  const saldoWrap = document.getElementById('f-saldo-wrap');
-  if(!check || !check.checked){if(saldoWrap)saldoWrap.style.display='none';return;}
-  const totalEl = document.getElementById('preview-total');
-  const total = totalEl ? parseFloat(totalEl.textContent.replace(/[^0-9]/g,''))||0 : 0;
-  const anticipo = parseFloat(document.getElementById('anticipo-fijo')?.value)||0;
-  const saldo = total - anticipo;
-  const saldoEl = document.getElementById('f-saldo');
-  if(saldoEl) saldoEl.textContent = '$'+saldo.toLocaleString('es-AR');
-  if(saldoWrap) saldoWrap.style.display = total > 0 ? 'block' : 'none';
+  const check=document.getElementById('f-anticipo-check');
+  const saldoWrap=document.getElementById('f-saldo-wrap');
+  if(!check||!check.checked){if(saldoWrap)saldoWrap.style.display='none';return;}
+  const totalEl=document.getElementById('preview-total');
+  const total=totalEl?parseFloat(totalEl.textContent.replace(/[^0-9]/g,''))||0:0;
+  const anticipo=parseFloat(document.getElementById('anticipo-fijo')?.value)||0;
+  const saldo=total-anticipo;
+  const saldoEl=document.getElementById('f-saldo');
+  if(saldoEl)saldoEl.textContent='$'+saldo.toLocaleString('es-AR');
+  if(saldoWrap)saldoWrap.style.display=total>0?'block':'none';
 }
-// bind anticipo-fijo input live
-setTimeout(()=>{
-  const af=document.getElementById('anticipo-fijo');
-  if(af) af.addEventListener('input',()=>{actualizarDisplayAnticipo();actualizarSaldo();});
-},0);
+setTimeout(()=>{const af=document.getElementById('anticipo-fijo');if(af)af.addEventListener('input',()=>{actualizarDisplayAnticipo();actualizarSaldo();});},0);
 
-function cambiarQty(sigla, delta){
+function cambiarQty(sigla,delta){
   const el=document.getElementById('f-siglas');
   let siglas=parsearSiglas(el.value);
   const count=siglas.filter(s=>s===sigla).length;
-  const newCount=Math.max(0, count+delta);
-  // remove all occurrences of this sigla
+  const newCount=Math.max(0,count+delta);
   siglas=siglas.filter(s=>s!==sigla);
-  // add back newCount times
-  for(let i=0;i<newCount;i++) siglas.push(sigla);
+  for(let i=0;i<newCount;i++)siglas.push(sigla);
   el.value=siglasSerialized(siglas);
-  // if removed completely, deselect the block
-  calcularPreview();
-  // update block visual
-  renderSiglasButtons();
+  calcularPreview();renderSiglasButtons();
 }
-
 function toggleSigla(s){
   const el=document.getElementById('f-siglas');
   let siglas=parsearSiglas(el.value);
-  if(siglas.includes(s)){
-    siglas=siglas.filter(x=>x!==s);
-  } else {
-    siglas.push(s);
-  }
+  siglas=siglas.includes(s)?siglas.filter(x=>x!==s):[...siglas,s];
   el.value=siglasSerialized(siglas);
   calcularPreview();
 }
 
-/* ── GUARDAR TURNO ── */
 function guardarTurno(){
   const cliente=document.getElementById('f-cliente').value.trim();
   const fecha=document.getElementById('fecha-fija').value;
   const hora=document.getElementById('f-hora').value;
   const siglasTexto=document.getElementById('f-siglas').value.trim();
-  const siglasArr = parsearSiglas(siglasTexto);
+  const siglasArr=parsearSiglas(siglasTexto);
   if(!cliente||!fecha){showAlert('Completá nombre y fecha.','error');return;}
   if(!siglasArr.length){showAlert('Seleccioná al menos un tratamiento.','error');return;}
-
-  if(hora){
-    const ocupado=turnos.find(t=>t.fecha===fecha&&t.hora===hora);
-    if(ocupado){
-      showAlert(`⚠️ El horario ${hora}hs del ${fecha.split('-').reverse().join('/')} ya está ocupado con ${ocupado.cliente}.`,'error');
-      return;
-    }
-  }
-
-  // buscar teléfono de la base de clientes
+  if(hora){const ocupado=turnos.find(t=>t.fecha===fecha&&t.hora===hora);if(ocupado){showAlert(`⚠️ El horario ${hora}hs ya está ocupado con ${ocupado.cliente}.`,'error');return;}}
   let telefono='';
   const cDB=clientes.find(c=>c.nombre.toLowerCase()===cliente.toLowerCase());
-  if(cDB) telefono=cDB.telefono||'';
-
-  const {items,total}=calcularTurno(siglasTexto);
-  const anticipoCheck = document.getElementById('f-anticipo-check').checked;
-  const anticipoMonto = anticipoCheck ? (parseFloat(document.getElementById('anticipo-fijo').value)||0) : 0;
-  const redondeo = parseFloat(document.getElementById('f-redondeo')?.value)||0;
-  const promoCheck = document.getElementById('f-promo-check').checked;
-  const promoPct = promoCheck ? (parseFloat(document.getElementById('f-promo-pct').value)||0) : 0;
-  const totalConPromo = Math.round((promoCheck ? total*(1-promoPct/100) : total) + redondeo);
-  const turno={
-    id:Date.now(), cliente, telefono,
-    fecha, hora,
-    siglas:siglasSerialized(siglasArr),
-    notas:document.getElementById('f-notas').value.trim(),
-    promo: promoCheck,
-    promoPct: promoPct,
-    redondeo: redondeo,
-    totalFinal: totalConPromo,
-    anticipo: anticipoCheck,
-    anticipoMonto,
-    creado:new Date().toISOString()
-  };
+  if(cDB)telefono=cDB.telefono||'';
+  const{items,total}=calcularTurno(siglasTexto);
+  const anticipoCheck=document.getElementById('f-anticipo-check').checked;
+  const anticipoMonto=anticipoCheck?(parseFloat(document.getElementById('anticipo-fijo').value)||0):0;
+  const redondeo=parseFloat(document.getElementById('f-redondeo')?.value)||0;
+  const promoCheck=document.getElementById('f-promo-check').checked;
+  const promoPct=promoCheck?(parseFloat(document.getElementById('f-promo-pct').value)||0):0;
+  const totalConPromo=Math.round((promoCheck?total*(1-promoPct/100):total)+redondeo);
+  const turno={id:Date.now(),cliente,telefono,fecha,hora,siglas:siglasSerialized(siglasArr),notas:document.getElementById('f-notas').value.trim(),promo:promoCheck,promoPct,redondeo,totalFinal:totalConPromo,anticipo:anticipoCheck,anticipoMonto,creado:new Date().toISOString()};
   turnos.push(turno);
   guardarTurnoSB(turno).then(ok=>{
-    if(ok) showAlert(`✓ Turno de ${cliente} guardado — $${totalConPromo.toLocaleString('es-AR')}`);
+    if(ok)showAlert(`✓ Turno de ${cliente} guardado — $${totalConPromo.toLocaleString('es-AR')}`);
     else showAlert('Error al guardar el turno.','error');
   });
   limpiarFormulario();
 }
 
 function limpiarFormulario(){
-  // limpiar campos de forma segura
-  // reset hora slots
-  if(typeof window.renderHoraSlots==='function') window.renderHoraSlots();
-  ['f-cliente','f-hora','f-notas'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.value='';
-  });
-  // reset anticipo checkbox
-  const ac=document.getElementById('f-anticipo-check');
-  if(ac) ac.checked=false;
-  const rd=document.getElementById('f-redondeo');
-  if(rd) rd.value='';
-  const tfw=document.getElementById('f-total-final-wrap');
-  if(tfw) tfw.style.display='none';
-  const pc=document.getElementById('f-promo-check');
-  if(pc) pc.checked=false;
-  const pw=document.getElementById('f-promo-wrap');
-  if(pw) pw.style.display='none';
-  const dw=document.getElementById('f-descuento-wrap');
-  if(dw) dw.style.display='none';
-  const pp=document.getElementById('f-promo-pct');
-  if(pp) pp.value='';
-  const sw=document.getElementById('f-saldo-wrap');
-  if(sw) sw.style.display='none';
-  // reset siglas
-  const fs=document.getElementById('f-siglas');
-  if(fs) fs.value='[]';
-  // reset preview
-  const pb=document.getElementById('preview-box');
-  if(pb) pb.style.display='none';
-  cerrarAC();
-  renderSiglasButtons();
+  if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+  ['f-cliente','f-hora','f-notas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const ac=document.getElementById('f-anticipo-check');if(ac)ac.checked=false;
+  const rd=document.getElementById('f-redondeo');if(rd)rd.value='';
+  const tfw=document.getElementById('f-total-final-wrap');if(tfw)tfw.style.display='none';
+  const pc=document.getElementById('f-promo-check');if(pc)pc.checked=false;
+  const pw=document.getElementById('f-promo-wrap');if(pw)pw.style.display='none';
+  const dw=document.getElementById('f-descuento-wrap');if(dw)dw.style.display='none';
+  const pp=document.getElementById('f-promo-pct');if(pp)pp.value='';
+  const sw=document.getElementById('f-saldo-wrap');if(sw)sw.style.display='none';
+  const fs=document.getElementById('f-siglas');if(fs)fs.value='[]';
+  const pb=document.getElementById('preview-box');if(pb)pb.style.display='none';
+  cerrarAC();renderSiglasButtons();
 }
 
-function hoy(){ return new Date().toISOString().split('T')[0]; }
+function hoy(){return new Date().toISOString().split('T')[0];}
 
-/* ── AGENDA ── */
-function toggleNoVino(id, noVino){
-  const t = turnos.find(x=>x.id===id);
-  if(!t) return;
-  t.noVino = noVino;
-  // Update in Supabase
-  fetch(SB_URL+'/rest/v1/turnos?id=eq.'+id,{
-    method:'PATCH',
-    headers:{...SB_HEADERS,'Prefer':'return=minimal'},
-    body:JSON.stringify({notas: noVino ? '[NO VINO] '+(t.notas||'').replace('[NO VINO] ','') : (t.notas||'').replace('[NO VINO] ','')})
-  });
-  renderAgenda();
-  renderStats();
+function toggleNoVino(id,noVino){
+  const t=turnos.find(x=>x.id===id);
+  if(!t)return;
+  t.noVino=noVino;
+  fetch(SB_URL+'/rest/v1/turnos?id=eq.'+id,{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({notas:noVino?'[NO VINO] '+(t.notas||'').replace('[NO VINO] ',''):(t.notas||'').replace('[NO VINO] ','')})});
+  renderAgenda();renderStats();
 }
 
 function renderAgenda(){
@@ -1104,9 +832,9 @@ function renderAgenda(){
   const ff=document.getElementById('filtro-fecha').value;
   const fs=document.getElementById('filtro-sigla').value.toUpperCase().trim();
   let lista=[...turnos];
-  if(fc) lista=lista.filter(t=>t.cliente.toLowerCase().includes(fc));
-  if(ff) lista=lista.filter(t=>t.fecha===ff);
-  if(fs) lista=lista.filter(t=>parsearSiglas(t.siglas).includes(fs));
+  if(fc)lista=lista.filter(t=>t.cliente.toLowerCase().includes(fc));
+  if(ff)lista=lista.filter(t=>t.fecha===ff);
+  if(fs)lista=lista.filter(t=>parsearSiglas(t.siglas).includes(fs));
   lista.sort((a,b)=>(a.fecha+a.hora)>(b.fecha+b.hora)?1:-1);
   const c=document.getElementById('agenda-container');
   if(!lista.length){c.innerHTML='<div class="no-data">Sin turnos que coincidan con los filtros</div>';return;}
@@ -1114,7 +842,7 @@ function renderAgenda(){
 }
 
 function resolverTelefono(t){
-  if(t.telefono) return t.telefono;
+  if(t.telefono)return t.telefono;
   const cDB=clientes.find(c=>c.nombre.toLowerCase()===t.cliente.toLowerCase());
   return cDB?cDB.telefono||'':'';
 }
@@ -1122,19 +850,15 @@ function resolverTelefono(t){
 function turnoCard(t){
   const badges=parsearSiglas(t.siglas).map(s=>`<span class="sigla-badge">${s}</span>`).join('');
   const fecha=t.fecha?t.fecha.split('-').reverse().join('/'):'';
-  const {items,total}=calcularTurno(t.siglas);
-  const totalBase = total;
+  const{items,total}=calcularTurno(t.siglas);
+  const totalBase=total;
   let totalMostrar;
-  if(t.promo && t.promoPct){
-    totalMostrar = Math.round(totalBase * (1 - t.promoPct/100)) + (t.redondeo||0);
-  } else if(t.redondeo){
-    totalMostrar = totalBase + (t.redondeo||0);
-  } else {
-    totalMostrar = totalBase;
-  }
+  if(t.promo&&t.promoPct){totalMostrar=Math.round(totalBase*(1-t.promoPct/100))+(t.redondeo||0);}
+  else if(t.redondeo){totalMostrar=totalBase+(t.redondeo||0);}
+  else{totalMostrar=totalBase;}
   const tel=resolverTelefono(t);
-  const noVino = t.noVino || false;
-  const cardStyle = noVino ? 'opacity:0.5;background:#e8e0dc;' : '';
+  const noVino=t.noVino||false;
+  const cardStyle=noVino?'opacity:0.5;background:#e8e0dc;':'';
   return `<div class="turno-card" style="${cardStyle}">
     <div class="turno-header">
       <div>
@@ -1144,9 +868,7 @@ function turnoCard(t){
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
         <div style="display:flex;gap:6px;align-items:center">
           <span class="turno-total">$${totalMostrar.toLocaleString('es-AR')}</span>
-          ${tel ? `<button class="btn-wa" onclick="abrirWA(${t.id})" title="WhatsApp">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          </button>` : ''}
+          ${tel?`<button class="btn-wa" onclick="abrirWA(${t.id})" title="WhatsApp"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></button>`:''}
           <button class="btn-secondary btn-sm" onclick="abrirModal(${t.id})" title="Editar">✎</button>
           <button class="btn-danger" onclick="eliminarTurno(${t.id})" title="Eliminar">✕</button>
         </div>
@@ -1157,10 +879,583 @@ function turnoCard(t){
       </div>
     </div>
     <div style="margin:6px 0">${badges}</div>
-    <div style="font-size:12px;color:#a89890">${items.map(i=>i.nombre+(i.qty>1?' x'+i.qty:'')+': $'+i.precio.toLocaleString('es-AR')).join(' · ')}${items.length?'  —  Total: $'+total.toLocaleString('es-AR'):''}</div>
-    ${t.promo?`<div style="margin-top:6px"><span style="background:#c9a96e;color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">Promo ${t.promoPct}% desc.</span></div>`:''}
-    ${t.notas?`<div style="font-size:12px;color:#a89890;margin-top:4px;font-style:italic">${t.notas}</div>`:''}
+    <div style="font-size:12px;color:#a89890">${items.map(i=>`${i.sigla}: $${i.precio.toLocaleString('es-AR')}`).join(' · ')}</div>
+    ${t.notas?`<div style="font-size:12px;color:#a89890;margin-top:5px;font-style:italic">${t.notas}</div>`:''}
+    ${t.anticipo?`<div style="margin-top:5px"><span style="background:#e8f5e9;color:#2d7a4a;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500">Anticipo $${(t.anticipoMonto||0).toLocaleString('es-AR')}</span></div>`:''}
+    ${t.promo?`<div style="margin-top:3px"><span style="background:#fff8e1;color:#b8860b;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500">Promo ${t.promoPct}% desc.</span></div>`:''}
+    ${t.redondeo?`<div style="margin-top:3px"><span style="background:#e3f2fd;color:#1565c0;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500">Redondeo +$${t.redondeo.toLocaleString('es-AR')}</span></div>`:''}
   </div>`;
 }
 
+function eliminarTurno(id){
+  if(!confirm('¿Eliminar este turno?'))return;
+  turnos=turnos.filter(t=>t.id!==id);
+  eliminarTurnoSB(id);
+  renderAgenda();renderStats();
+}
 
+let editId=null;
+
+function abrirModal(id){
+  const t=turnos.find(x=>x.id===id);
+  if(!t)return;
+  editId=id;
+  document.getElementById('em-cliente').value=t.cliente||'';
+  document.getElementById('em-fecha').value=t.fecha||'';
+  document.getElementById('em-hora').value=t.hora||'';
+  document.getElementById('em-notas').value=t.notas||'';
+  document.getElementById('em-siglas').value=t.siglas||'[]';
+  const emCheck=document.getElementById('em-anticipo-check');
+  const emWrap=document.getElementById('em-anticipo-wrap');
+  const emSaldoWrap=document.getElementById('em-saldo-wrap');
+  emCheck.checked=t.anticipo||false;
+  document.getElementById('em-anticipo-monto').value=t.anticipoMonto||0;
+  emWrap.style.display=t.anticipo?'flex':'none';
+  emSaldoWrap.style.display='none';
+  const emPromoCheck=document.getElementById('em-promo-check');
+  const emPromoWrap=document.getElementById('em-promo-wrap');
+  const emPromoTotal=document.getElementById('em-promo-total');
+  emPromoCheck.checked=t.promo||false;
+  document.getElementById('em-promo-pct').value=t.promoPct||0;
+  emPromoWrap.style.display=t.promo?'flex':'none';
+  emPromoTotal.style.display=t.promo?'flex':'none';
+  document.getElementById('em-redondeo').value=t.redondeo||0;
+  renderModalSiglas();
+  actualizarEmPreview();
+  actualizarEmPromo();
+  document.getElementById('edit-modal').style.display='flex';
+}
+
+function cerrarModal(e){
+  if(e&&e.target!==document.getElementById('edit-modal'))return;
+  document.getElementById('edit-modal').style.display='none';
+  editId=null;
+}
+
+function renderModalSiglas(){
+  const seleccionadas=parsearSiglas(document.getElementById('em-siglas').value);
+  document.getElementById('em-siglas-btns').innerHTML=tratamientos.map(t=>{
+    const activo=seleccionadas.includes(t.sigla);
+    const color=t.color||'#f5ede9';
+    const dark=colorDark(color);
+    const esc=t.sigla.replace(/'/g,"\'");
+    const bgStyle=activo?`background:${dark};border-color:${dark};color:#fff`:`background:${color};border-color:${color};color:${dark}`;
+    return `<span class="sigla-btn" style="${bgStyle};padding:7px 12px;font-size:12px;min-width:52px" onclick="toggleModalSigla('${esc}')"><span style="font-weight:500">${t.sigla}</span><span class="sb-nombre" style="opacity:0.75">${t.nombre}</span></span>`;
+  }).join('');
+}
+
+function toggleModalSigla(s){
+  const el=document.getElementById('em-siglas');
+  let siglas=parsearSiglas(el.value);
+  siglas=siglas.includes(s)?siglas.filter(x=>x!==s):[...siglas,s];
+  el.value=siglasSerialized(siglas);
+  renderModalSiglas();actualizarEmPreview();
+}
+
+function actualizarEmAnticipo(){
+  const check=document.getElementById('em-anticipo-check');
+  const wrap=document.getElementById('em-anticipo-wrap');
+  const saldoWrap=document.getElementById('em-saldo-wrap');
+  wrap.style.display=check.checked?'flex':'none';
+  if(!check.checked)saldoWrap.style.display='none';
+  actualizarEmSaldo();
+}
+
+function actualizarEmSaldo(){
+  const check=document.getElementById('em-anticipo-check');
+  const saldoWrap=document.getElementById('em-saldo-wrap');
+  if(!check||!check.checked){saldoWrap.style.display='none';return;}
+  const siglas=document.getElementById('em-siglas').value;
+  const{total}=calcularTurno(siglas);
+  const anticipo=parseFloat(document.getElementById('em-anticipo-monto').value)||0;
+  const saldo=total-anticipo;
+  document.getElementById('em-saldo').textContent='$'+saldo.toLocaleString('es-AR');
+  saldoWrap.style.display='block';
+}
+
+function actualizarEmPromo(){
+  const check=document.getElementById('em-promo-check');
+  const wrap=document.getElementById('em-promo-wrap');
+  const totalDiv=document.getElementById('em-promo-total');
+  wrap.style.display=check.checked?'flex':'none';
+  totalDiv.style.display=check.checked?'flex':'none';
+  if(check.checked){
+    const pct=parseFloat(document.getElementById('em-promo-pct').value)||0;
+    const redondeo=parseFloat(document.getElementById('em-redondeo').value)||0;
+    const siglas=document.getElementById('em-siglas').value;
+    const{total}=calcularTurno(siglas);
+    const resultado=Math.round(total*(1-pct/100))+redondeo;
+    document.getElementById('em-promo-resultado').textContent='$'+resultado.toLocaleString('es-AR');
+  }
+}
+
+function actualizarEmPreview(){
+  const siglas=document.getElementById('em-siglas').value;
+  const{items,total}=calcularTurno(siglas);
+  if(!items.length){document.getElementById('em-preview').textContent='';return;}
+  document.getElementById('em-preview').textContent=items.map(i=>`${i.sigla}: $${i.precio.toLocaleString('es-AR')}`).join(' · ')+' — Total: $'+total.toLocaleString('es-AR');
+  actualizarEmSaldo();
+}
+
+function guardarEdicion(){
+  const cliente=document.getElementById('em-cliente').value.trim();
+  const fecha=document.getElementById('em-fecha').value;
+  const hora=document.getElementById('em-hora').value;
+  const siglas=document.getElementById('em-siglas').value;
+  if(!cliente||!fecha){showAlert('Completá nombre y fecha.','error');return;}
+  if(hora){const ocupado=turnos.find(t=>t.fecha===fecha&&t.hora===hora&&t.id!==editId);if(ocupado){showAlert(`⚠️ El horario ${hora}hs ya está ocupado con ${ocupado.cliente}.`,'error');return;}}
+  const idx=turnos.findIndex(t=>t.id===editId);
+  if(idx===-1)return;
+  const cDB=clientes.find(c=>c.nombre.toLowerCase()===cliente.toLowerCase());
+  const promo=document.getElementById('em-promo-check').checked;
+  const promoPct=parseFloat(document.getElementById('em-promo-pct').value)||0;
+  const redondeo=parseFloat(document.getElementById('em-redondeo').value)||0;
+  const{total}=calcularTurno(siglas);
+  const totalFinal=promo?Math.round(total*(1-promoPct/100))+redondeo:total+redondeo;
+  turnos[idx]={...turnos[idx],cliente,telefono:cDB?cDB.telefono||'':turnos[idx].telefono||'',fecha,hora,siglas,notas:document.getElementById('em-notas').value.trim(),anticipo:document.getElementById('em-anticipo-check').checked,anticipoMonto:document.getElementById('em-anticipo-check').checked?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0,promo,promoPct,redondeo,totalFinal};
+  guardarTurnoSB(turnos[idx]).then(()=>{
+    document.getElementById('edit-modal').style.display='none';
+    editId=null;renderAgenda();renderStats();showAlert('✓ Turno actualizado');
+  });
+}
+
+function abrirWA(id){
+  const t=turnos.find(x=>x.id===id);
+  if(!t)return;
+  const tel=resolverTelefono(t);
+  const numero=tel.replace(/\D/g,'');
+  const fecha=t.fecha?t.fecha.split('-').reverse().join('/'):'';
+  const hora=t.hora||'';
+  const{items,total}=calcularTurno(t.siglas);
+  const zonas=items.map(i=>i.qty>1?i.nombre+' x'+i.qty:i.nombre).join(', ');
+  const totalMostrar=t.totalFinal!==undefined?t.totalFinal:total;
+  const saldoStr=t.anticipo&&t.anticipoMonto?'A abonar: $'+(totalMostrar-t.anticipoMonto).toLocaleString('es-AR')+' (anticipo abonado: $'+t.anticipoMonto.toLocaleString('es-AR')+')':'Total: $'+totalMostrar.toLocaleString('es-AR');
+  const mensaje='Hola '+t.cliente+'! Te recordamos tu turno en HALIME:\n\nFecha: '+fecha+'\nHora: '+hora+'\nZonas: '+zonas+'\n'+saldoStr+'\n\nTe esperamos!';
+  document.getElementById('wa-numero').value=numero;
+  document.getElementById('wa-mensaje').value=mensaje;
+  document.getElementById('wa-modal').style.display='flex';
+}
+
+function cerrarWAModal(e){if(e&&e.target!==document.getElementById('wa-modal'))return;document.getElementById('wa-modal').style.display='none';}
+function enviarWA(){
+  const numero=document.getElementById('wa-numero').value.trim().replace(/\D/g,'');
+  const mensaje=document.getElementById('wa-mensaje').value.trim();
+  if(!numero){showAlert('Ingresá el número de WhatsApp.','error');return;}
+  let num=numero.replace(/\D/g,'');
+  if(num.startsWith('549'))num=num.slice(3);
+  else if(num.startsWith('54'))num=num.slice(2);
+  else if(num.startsWith('0'))num=num.slice(1);
+  window.open(`https://wa.me/549${num}?text=${encodeURIComponent(mensaje)}`,'_blank');
+  document.getElementById('wa-modal').style.display='none';
+}
+
+function renderStats(){
+  const h=hoy(),mes=h.slice(0,7);
+  const th=turnos.filter(t=>t.fecha===h);
+  const thPresentes=th.filter(t=>!t.noVino);
+  const rh=thPresentes.reduce((s,t)=>s+(t.totalFinal!==undefined?t.totalFinal:calcularTurno(t.siglas).total),0);
+  const rm=turnos.filter(t=>t.fecha&&t.fecha.startsWith(mes)&&!t.noVino).reduce((s,t)=>s+(t.totalFinal!==undefined?t.totalFinal:calcularTurno(t.siglas).total),0);
+  document.getElementById('stats-container').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Turnos hoy</div><div class="stat-value">${th.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Recaudación hoy</div><div class="stat-value" style="font-size:16px">$${rh.toLocaleString('es-AR')}</div></div>
+    <div class="stat-card"><div class="stat-label">Total del mes</div><div class="stat-value" style="font-size:16px">$${rm.toLocaleString('es-AR')}</div></div>
+    <div class="stat-card"><div class="stat-label">Turnos totales</div><div class="stat-value">${turnos.length}</div></div>`;
+}
+
+function limpiarFiltros(){
+  ['filtro-cliente','filtro-fecha','filtro-sigla'].forEach(id=>document.getElementById(id).value='');
+  renderAgenda();
+}
+
+function exportarExcel(){
+  if(!turnos.length){showAlert('No hay turnos para exportar.','error');return;}
+  const wb=XLSX.utils.book_new();
+  const cFecha=document.getElementById('co-fecha')?.value;
+  const aFecha=document.getElementById('fecha-fija')?.value;
+  const fechaFiltro=(cFecha||aFecha||hoy()).substring(0,10);
+  const turnosDia=[...turnos].filter(t=>t.fecha===fechaFiltro).sort((a,b)=>a.hora>b.hora?1:-1);
+  const d=costos[fechaFiltro]||{};
+  const pUsados=Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
+  const R_HEADER=4,R_FIRST_TURNO=5,nTurnos=turnosDia.length,R_LAST_TURNO=R_FIRST_TURNO+nTurnos-1;
+  const R_PULSOS_HEADER=R_LAST_TURNO+3,R_PULSOS_DATA=R_PULSOS_HEADER+1,R_RESUMEN=R_PULSOS_DATA+3;
+  const rows=[];
+  rows.push(['Ficha Halime']);
+  rows.push([fechaFiltro.split('-').reverse().join('/')]);
+  rows.push([]);
+  rows.push(['Paciente','Hora','Tratamiento','Total lista','OFF %','Seña','Diferencia','Tot. Efvo.','Notas']);
+  turnosDia.forEach((t,i)=>{
+    const{items,total}=calcularTurno(t.siglas);
+    const promoOff=t.promo?(t.promoPct||0):0;
+    const seña=t.anticipo?(t.anticipoMonto||0):0;
+    const diferencia=t.redondeo||0;
+    const zonasStr=items.map(i=>i.qty>1?i.nombre+' x'+i.qty:i.nombre).join(', ');
+    const rowNum=R_FIRST_TURNO+i;
+    rows.push([t.cliente,t.hora||'',zonasStr,total,promoOff||'',seña||'',diferencia||'',{f:`ROUND(D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum}),2)`},t.notas||'']);
+  });
+  rows.push([]);rows.push([]);
+  const pulsoRow=R_PULSOS_DATA;
+  rows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Valor pulso (USD)','Dólar','Valor pulso ($)','Costo pulsos']);
+  rows.push([d.pulsosInicio||0,d.pulsosCierre||0,{f:`B${pulsoRow}-A${pulsoRow}`},0.093,d.dolar||0,{f:`ROUND(E${pulsoRow}*D${pulsoRow}/100,2)`},{f:`ROUND(C${pulsoRow}*F${pulsoRow},2)`}]);
+  rows.push([]);rows.push([]);
+  const totEfvoCol='H';
+  const sumTurnos=nTurnos>0?`SUM(${totEfvoCol}${R_FIRST_TURNO}:${totEfvoCol}${R_LAST_TURNO})`:'0';
+  const resRow=(offset)=>R_RESUMEN+offset;
+  let hs=0;
+  if(d.entrada&&d.salida){const[eh,em]=d.entrada.split(':').map(Number);const[sh,sm]=d.salida.split(':').map(Number);const min=(sh*60+sm)-(eh*60+em);if(min>0)hs=Math.round(min/60*100)/100;}
+  const R_TOTAL_COBRADO=resRow(1),R_OPERADORA=resRow(4),R_HS=resRow(5),R_PRECIO_HORA=resRow(6),R_REDONDEO=resRow(7),R_COMIDA=resRow(8),R_PULSOS_COSTO=resRow(9),R_NICO=resRow(10),R_TOTAL_COSTOS=resRow(12);
+  rows.push(['RESUMEN DEL DÍA']);
+  rows.push(['Total cobrado','',{f:sumTurnos}]);
+  rows.push([]);
+  rows.push(['COSTOS']);
+  rows.push(['Operadora','',{f:`ROUND(C${R_HS}*C${R_PRECIO_HORA}+C${R_REDONDEO},2)`}]);
+  rows.push(['  Horas trabajadas','',hs]);
+  rows.push(['  Precio/hora','',d.precioHora||0]);
+  rows.push(['  Redondeo','',d.redondeo||0]);
+  rows.push(['Comida','',d.comida||0]);
+  rows.push(['Pulsos','',{f:`ROUND(G${pulsoRow},2)`}]);
+  rows.push(['10% Nico','',{f:`ROUND((C${R_TOTAL_COBRADO}-C${R_OPERADORA}-C${R_COMIDA}-C${R_PULSOS_COSTO})*0.1,2)`}]);
+  rows.push([]);
+  rows.push(['Total costos','',{f:`ROUND(C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO},2)`}]);
+  rows.push([]);
+  rows.push(['Ganancia neta','',{f:`ROUND(C${R_TOTAL_COBRADO}-C${R_TOTAL_COSTOS},2)`}]);
+  const wsFicha=XLSX.utils.aoa_to_sheet(rows);
+  wsFicha['!cols']=[22,8,32,12,8,12,12,12,20].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,wsFicha,'Ficha');
+  const turnosRows=[['Cliente','Teléfono','Fecha','Hora','Zonas','Promo','Seña','Monto seña','Total','Notas']];
+  [...turnos].sort((a,b)=>(a.fecha+a.hora)>(b.fecha+b.hora)?1:-1).forEach(t=>{
+    const tel=resolverTelefono(t);
+    const{total}=calcularTurno(t.siglas);
+    const totalFinal=t.totalFinal!==undefined?t.totalFinal:total;
+    const montoSeña=t.anticipo?(t.anticipoMonto||0):0;
+    turnosRows.push([t.cliente,tel,t.fecha?t.fecha.split('-').reverse().join('/'):''  ,t.hora||'',parsearSiglas(t.siglas).join(' '),t.promo?t.promoPct+'%':'',t.anticipo?'Sí':'',montoSeña,totalFinal,t.notas||'']);
+  });
+  const wsTurnos=XLSX.utils.aoa_to_sheet(turnosRows);
+  wsTurnos['!cols']=[22,14,10,6,24,8,6,10,10,20].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,wsTurnos,'Turnos');
+  const clientesRows=[['Nombre','Teléfono','Email']];
+  [...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(c=>{clientesRows.push([c.nombre,c.telefono||'',c.mail||'']);});
+  const wsClientes=XLSX.utils.aoa_to_sheet(clientesRows);
+  wsClientes['!cols']=[24,14,28].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,wsClientes,'Clientes');
+  const tratRows=[['Sigla','Tratamiento','Precio']];
+  tratamientos.forEach(t=>tratRows.push([t.sigla,t.nombre,t.precio]));
+  const wsTrat=XLSX.utils.aoa_to_sheet(tratRows);
+  wsTrat['!cols']=[8,24,12].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,wsTrat,'Tratamientos');
+  const fechaFmt=fechaFiltro.split('-').reverse().join('-');
+  XLSX.writeFile(wb,'halime_'+fechaFmt+'.xlsx');
+  showAlert('✓ Ficha exportada');
+}
+
+function renderClientes(){
+  const buscar=document.getElementById('filtro-clientes-buscar').value.toLowerCase();
+  const tbody=document.getElementById('tbody-clientes');
+  let lista=[...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  if(buscar)lista=lista.filter(c=>c.nombre.toLowerCase().includes(buscar)||(c.telefono||'').includes(buscar)||(c.mail||'').toLowerCase().includes(buscar));
+  if(!lista.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:#a89890;padding:1.5rem">${clientes.length?'Sin resultados':'No hay clientes todavía.'}</td></tr>`;return;}
+  tbody.innerHTML=lista.map(c=>`<tr><td style="font-weight:500">${c.nombre}</td><td>${c.telefono||'—'}</td><td style="font-size:13px;color:#6a5a54">${c.mail||'—'}</td><td style="text-align:right"><button class="btn-danger" onclick="eliminarCliente('${escapar(c.nombre)}')">✕</button></td></tr>`).join('');
+}
+
+function agregarCliente(){
+  const nombre=document.getElementById('c-nombre').value.trim();
+  const telefono=document.getElementById('c-telefono').value.trim();
+  const mail=document.getElementById('c-mail').value.trim();
+  if(!nombre){showAlert('Ingresá el nombre de la clienta.','error');return;}
+  if(clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){showAlert('Esa clienta ya existe.','error');return;}
+  const nuevoCliente={nombre,telefono,mail};
+  clientes.push(nuevoCliente);
+  guardarClienteSB(nuevoCliente);
+  renderClientes();
+  document.getElementById('c-nombre').value='';
+  document.getElementById('c-telefono').value='';
+  document.getElementById('c-mail').value='';
+  showAlert(`✓ ${nombre} agregada`);
+}
+
+function eliminarCliente(nombre){
+  if(!confirm(`¿Eliminar a ${nombre} de la lista?`))return;
+  clientes=clientes.filter(c=>c.nombre!==nombre);
+  eliminarClienteSB(nombre);renderClientes();
+}
+
+const PRESETS=[
+  {hex:'#fce4ec',label:'Rosa'},{hex:'#f8bbd0',label:'Rosa fuerte'},{hex:'#e3f2fd',label:'Azul'},{hex:'#bbdefb',label:'Azul fuerte'},
+  {hex:'#fff8e1',label:'Dorado'},{hex:'#ffecb3',label:'Dorado fuerte'},{hex:'#e8f5e9',label:'Verde'},{hex:'#c8e6c9',label:'Verde fuerte'},
+  {hex:'#f3e5f5',label:'Lila'},{hex:'#e1bee7',label:'Lila fuerte'},{hex:'#ffe0b2',label:'Naranja'},{hex:'#ffccbc',label:'Salmón'},
+  {hex:'#e0f2f1',label:'Menta'},{hex:'#f5ede9',label:'Nude'},{hex:'#eeeeee',label:'Gris'},{hex:'#ffffff',label:'Blanco'},
+];
+
+let popupIdx=null;
+
+function abrirColorPopup(i,btn){
+  popupIdx=i;
+  const popup=document.getElementById('color-popup');
+  const color=tratamientos[i].color||'#f5ede9';
+  document.getElementById('cp-swatches').innerHTML=PRESETS.map(p=>`<div class="cp-swatch${p.hex===color?' active':''}" style="background:${p.hex}" title="${p.label}" onclick="elegirColorPopup('${p.hex}')"></div>`).join('');
+  document.getElementById('cp-spectrum').value=color;
+  document.getElementById('cp-spectrum').onchange=function(){elegirColorPopup(this.value);};
+  popup.style.visibility='hidden';popup.style.top='0px';popup.style.left='0px';popup.classList.add('open');
+  const popH=popup.offsetHeight,popW=popup.offsetWidth;
+  popup.classList.remove('open');popup.style.visibility='';
+  const rect=btn.getBoundingClientRect();
+  const spaceBelow=window.innerHeight-rect.bottom;
+  let top=spaceBelow>=popH+8||spaceBelow>=rect.top?rect.bottom+6:rect.top-popH-6;
+  top=Math.max(8,Math.min(top,window.innerHeight-popH-8));
+  const left=Math.max(8,Math.min(rect.left,window.innerWidth-popW-8));
+  popup.style.top=top+'px';popup.style.left=left+'px';popup.classList.add('open');
+}
+
+function elegirColorPopup(hex){if(popupIdx===null)return;tratamientos[popupIdx].color=hex;guardarTratamientosSB();renderTratamientos();renderSiglasButtons();cerrarColorPopup();}
+function cerrarColorPopup(){document.getElementById('color-popup').classList.remove('open');popupIdx=null;}
+document.addEventListener('click',function(e){const popup=document.getElementById('color-popup');if(!popup.contains(e.target)&&!e.target.closest('.color-trigger')){cerrarColorPopup();}});
+
+function renderTratamientos(){
+  const cont=document.getElementById('trat-bloques');
+  if(!tratamientos.length){cont.innerHTML='<div style="color:#a89890;font-size:14px;padding:1rem">No hay zonas cargadas.</div>';return;}
+  cont.innerHTML=tratamientos.map((t,i)=>{
+    const color=t.color||'#f5ede9';
+    const dark=colorDark(color);
+    return `<div class="trat-bloque" data-idx="${i}" style="background:${color};color:${dark}" ondblclick="editarBloque(${i})">
+      <div class="tb-actions">
+        <div style="display:flex;flex-direction:column;gap:1px">
+          ${i>0?`<div class="tb-btn" style="background:rgba(0,0,0,0.15);color:#fff;font-size:9px" onclick="event.stopPropagation();moverZona(${i},-1)">▲</div>`:'<div style="width:20px;height:9px"></div>'}
+          ${i<tratamientos.length-1?`<div class="tb-btn" style="background:rgba(0,0,0,0.15);color:#fff;font-size:9px" onclick="event.stopPropagation();moverZona(${i},1)">▼</div>`:'<div style="width:20px;height:9px"></div>'}
+        </div>
+        <div class="color-trigger tb-btn" style="background:${color};border:2px solid rgba(0,0,0,0.15);width:20px;height:20px" onclick="event.stopPropagation();abrirColorPopup(${i},this)"></div>
+        <div class="tb-btn tb-btn-del" onclick="event.stopPropagation();eliminarTratamiento(${i})">✕</div>
+      </div>
+      <div class="tb-edit-overlay" id="edit-overlay-${i}">
+        <input class="tb-edit-input" id="edit-sigla-${i}" value="${t.sigla}" placeholder="Sigla" style="font-weight:700;text-transform:uppercase">
+        <input class="tb-edit-input" id="edit-nombre-${i}" value="${t.nombre}" placeholder="Nombre">
+        <input class="tb-edit-input" id="edit-precio-${i}" value="${t.precio}" placeholder="Precio" type="number">
+        <div class="tb-edit-actions">
+          <button class="tb-save" onclick="event.stopPropagation();guardarBloque(${i})">✓</button>
+          <button class="tb-cancel" onclick="event.stopPropagation();cancelarEdicion(${i})">✕</button>
+        </div>
+      </div>
+      <span class="tb-sigla">${t.sigla}</span>
+      <span class="tb-nombre">${t.nombre}</span>
+      <span class="tb-precio">$${t.precio.toLocaleString('es-AR')}</span>
+    </div>`;
+  }).join('');
+}
+
+function moverZona(i,dir){
+  const newIdx=i+dir;
+  if(newIdx<0||newIdx>=tratamientos.length)return;
+  const tmp=tratamientos[i];tratamientos[i]=tratamientos[newIdx];tratamientos[newIdx]=tmp;
+  guardarTratamientosSB().then(ok=>{if(ok)showAlert('✓ Orden guardado');});
+  renderTratamientos();renderSiglasButtons();
+}
+
+let dragIdx=null;
+function dragStart(e,i){dragIdx=i;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function dragEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('.trat-bloque').forEach(b=>b.classList.remove('drag-over'));}
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function dragDrop(e,targetIdx){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(dragIdx===null||dragIdx===targetIdx)return;const moved=tratamientos.splice(dragIdx,1)[0];tratamientos.splice(targetIdx,0,moved);dragIdx=null;guardarTratamientosSB();renderTratamientos();renderSiglasButtons();}
+
+function editarBloque(i){const el=document.querySelector(`.trat-bloque[data-idx="${i}"]`);if(!el)return;el.classList.add('editing');el.setAttribute('draggable','false');setTimeout(()=>document.getElementById('edit-nombre-'+i)?.focus(),50);}
+function cancelarEdicion(i){const el=document.querySelector(`.trat-bloque[data-idx="${i}"]`);if(!el)return;el.classList.remove('editing');el.setAttribute('draggable','true');}
+function guardarBloque(i){
+  const sigla=(document.getElementById('edit-sigla-'+i)?.value||'').trim().toUpperCase();
+  const nombre=(document.getElementById('edit-nombre-'+i)?.value||'').trim();
+  const precio=parseInt(document.getElementById('edit-precio-'+i)?.value)||0;
+  if(!sigla||!nombre){showAlert('Sigla y nombre son obligatorios.','error');return;}
+  const dup=tratamientos.find((t,idx)=>t.sigla===sigla&&idx!==i);
+  if(dup){showAlert('Esa sigla ya existe.','error');return;}
+  tratamientos[i]={...tratamientos[i],sigla,nombre,precio};
+  guardarTratamientosSB().then(()=>showAlert(`✓ ${sigla} actualizado`));
+  renderTratamientos();renderSiglasButtons();
+}
+
+function agregarTratamiento(){
+  const sigla=document.getElementById('t-sigla').value.trim().toUpperCase();
+  const nombre=document.getElementById('t-nombre').value.trim();
+  const precio=parseInt(document.getElementById('t-precio').value)||0;
+  const color=document.getElementById('t-color').value||'#f5ede9';
+  if(!sigla||!nombre){showAlert('Completá sigla y nombre.','error');return;}
+  if(tratamientos.find(t=>t.sigla===sigla)){showAlert('Esa sigla ya existe.','error');return;}
+  const nuevaTrat={sigla,nombre,precio,color};
+  tratamientos.push(nuevaTrat);
+  insertarTratamientoSB(nuevaTrat,tratamientos.length-1);
+  renderTratamientos();renderSiglasButtons();
+  document.getElementById('t-sigla').value='';document.getElementById('t-nombre').value='';document.getElementById('t-precio').value='';document.getElementById('t-color').value='#f5ede9';
+  showAlert(`✓ "${sigla} — ${nombre}" agregado`);
+}
+
+function setColor(hex){document.getElementById('t-color').value=hex;}
+function cambiarColor(i,color){tratamientos[i].color=color;guardarTratamientosSB();renderTratamientos();renderSiglasButtons();}
+function eliminarTratamiento(i){
+  if(!confirm(`¿Eliminar "${tratamientos[i].sigla} — ${tratamientos[i].nombre}"?`))return;
+  const siglaEliminada=tratamientos[i].sigla;
+  tratamientos.splice(i,1);
+  eliminarTratamientoSB(siglaEliminada).then(()=>{guardarTratamientosSB();showAlert('Zona eliminada');});
+  renderTratamientos();renderSiglasButtons();
+}
+
+let costos=JSON.parse(localStorage.getItem('halime_costos')||'{}');
+
+function initCostos(){
+  document.getElementById('co-fecha').value=hoy();
+  initPrecioHoraFijo();
+  cargarCostosDia(hoy());
+  calcCostos();
+  document.getElementById('co-fecha').addEventListener('change',function(){cargarCostosDia(this.value);calcCostos();});
+}
+
+function cargarCostosDia(fecha){
+  const d=costos[fecha]||{};
+  document.getElementById('co-entrada').value=d.entrada||'';
+  document.getElementById('co-salida').value=d.salida||'';
+  const precioFijo=localStorage.getItem('halime_precio_hora_fijo');
+  const usarFijo=document.getElementById('co-precio-hora-fijo')?.checked;
+  if(usarFijo&&precioFijo){document.getElementById('co-precio-hora').value=precioFijo;}
+  else{document.getElementById('co-precio-hora').value=d.precioHora||'';}
+  document.getElementById('co-redondeo').value=d.redondeo||'';
+  document.getElementById('co-comida').value=d.comida||'';
+  if(d.pulsosInicio){document.getElementById('co-pulsos-inicio').value=d.pulsosInicio;}
+  else{
+    const fechasAnteriores=Object.keys(costos).filter(f=>f<fecha).sort();
+    const fechaAnterior=fechasAnteriores[fechasAnteriores.length-1];
+    const dAnterior=fechaAnterior?costos[fechaAnterior]:null;
+    document.getElementById('co-pulsos-inicio').value=dAnterior?.pulsosCierre||'';
+  }
+  document.getElementById('co-pulsos-cierre').value=d.pulsosCierre||'';
+  document.getElementById('co-precio-pulso').value=1.311;
+  document.getElementById('co-dolar').value=d.dolar||'';
+}
+
+function fijarPrecioHora(){
+  const cb=document.getElementById('co-precio-hora-fijo');
+  const val=document.getElementById('co-precio-hora').value;
+  if(cb.checked){localStorage.setItem('halime_precio_hora_fijo',val);}
+  else{localStorage.removeItem('halime_precio_hora_fijo');}
+}
+
+function initPrecioHoraFijo(){
+  const fijo=localStorage.getItem('halime_precio_hora_fijo');
+  const cb=document.getElementById('co-precio-hora-fijo');
+  if(fijo&&cb){cb.checked=true;document.getElementById('co-precio-hora').value=fijo;}
+}
+
+function calcCostos(){
+  const entrada=document.getElementById('co-entrada').value;
+  const salida=document.getElementById('co-salida').value;
+  const precioHora=parseFloat(document.getElementById('co-precio-hora').value)||0;
+  const redondeo=parseFloat(document.getElementById('co-redondeo').value)||0;
+  const comida=parseFloat(document.getElementById('co-comida').value)||0;
+  const precioPulso=parseFloat(document.getElementById('co-precio-pulso').value)||0;
+  const dolar=parseFloat(document.getElementById('co-dolar').value)||0;
+  let horasTrabajadas=0,horasStr='';
+  if(entrada&&salida){
+    const[eh,em]=entrada.split(':').map(Number);
+    const[sh,sm]=salida.split(':').map(Number);
+    const minutos=(sh*60+sm)-(eh*60+em);
+    if(minutos>0){horasTrabajadas=minutos/60;const h=Math.floor(minutos/60);const m=minutos%60;horasStr=h+'h'+(m?' '+m+'min':'');}
+  }
+  const costoOperadora=horasTrabajadas*precioHora+redondeo;
+  document.getElementById('co-horas-info').textContent=horasStr?`Horas trabajadas: ${horasStr} → $${(horasTrabajadas*precioHora).toLocaleString('es-AR')} + redondeo $${redondeo.toLocaleString('es-AR')} = $${costoOperadora.toLocaleString('es-AR')}` : '';
+  const pulsosInicio=parseInt(document.getElementById('co-pulsos-inicio').value)||0;
+  const pulsosCierre=parseInt(document.getElementById('co-pulsos-cierre').value)||0;
+  const totalPulsos=Math.max(0,pulsosCierre-pulsosInicio);
+  const costoPulsosTotalPesos=totalPulsos*precioPulso*dolar;
+  const infoEl=document.getElementById('co-pulsos-total-info');
+  if(totalPulsos>0&&precioPulso>0&&dolar>0){infoEl.textContent=`Pulsos usados: ${totalPulsos} × USD ${precioPulso} × $${dolar.toLocaleString('es-AR')} = $${costoPulsosTotalPesos.toLocaleString('es-AR')}`;}
+  else if(pulsosInicio>0||pulsosCierre>0){infoEl.textContent=totalPulsos>0?`Pulsos usados: ${totalPulsos}`:'El cierre debe ser mayor que el inicio.';}
+  else{infoEl.textContent='';}
+  const totalCostos=costoOperadora+comida+costoPulsosTotalPesos;
+  const resumen=document.getElementById('co-resumen');
+  const filas=[{label:'Operadora ('+horasStr+')',valor:horasTrabajadas*precioHora},{label:'Redondeo',valor:redondeo},{label:'Comida',valor:comida},{label:`Pulsos (${totalPulsos} usados: ${pulsosInicio}→${pulsosCierre})`,valor:costoPulsosTotalPesos}].filter(f=>f.valor>0);
+  if(!filas.length){resumen.innerHTML='<div style="text-align:center;color:#a89890;font-size:13px;padding:1rem">Completá los campos para ver el resumen.</div>';return;}
+  resumen.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid #f2eeeb"><span style="color:#5a3800">${f.label}</span><span style="font-weight:500">$${f.valor.toLocaleString('es-AR')}</span></div>`).join('')+`<div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:17px;font-weight:500;color:#2a1a16;border-top:1px solid #e8e0db;margin-top:6px"><span>Total costos del día</span><span>$${totalCostos.toLocaleString('es-AR')}</span></div>`;
+}
+
+function guardarCostos(){
+  const fecha=document.getElementById('co-fecha').value;
+  if(!fecha){showAlert('Elegí una fecha primero.','error');return;}
+  costos[fecha]={entrada:document.getElementById('co-entrada').value,salida:document.getElementById('co-salida').value,precioHora:parseFloat(document.getElementById('co-precio-hora').value)||0,redondeo:parseFloat(document.getElementById('co-redondeo').value)||0,comida:parseFloat(document.getElementById('co-comida').value)||0,pulsosInicio:parseInt(document.getElementById('co-pulsos-inicio').value)||0,pulsosCierre:parseInt(document.getElementById('co-pulsos-cierre').value)||0,precioPulso:parseFloat(document.getElementById('co-precio-pulso').value)||0,dolar:parseFloat(document.getElementById('co-dolar').value)||0};
+  guardarCostosSB(fecha,costos[fecha]);
+  showAlert(`✓ Costos del ${fecha.split('-').reverse().join('/')} guardados`);
+}
+
+function limpiarCostos(){
+  ['co-entrada','co-salida','co-precio-hora','co-redondeo','co-comida','co-pulsos-inicio','co-pulsos-cierre','co-precio-pulso','co-dolar'].forEach(id=>{document.getElementById(id).value='';});
+  calcCostos();
+}
+
+const SLOTS_GRILLA=["09:00","09:20","09:40","10:00","10:20","10:40","11:00","11:20","11:40","12:00","12:20","12:40","13:00","13:20","13:40","14:00","14:20","14:40","15:00","15:20","15:40","16:00","16:20","16:40","17:00","17:20","17:40","18:00"];
+
+function renderGrilla(){
+  const fecha=document.getElementById('grilla-fecha').value;
+  if(!fecha){document.getElementById('grilla-container').innerHTML='<div class="no-data">Elegí una fecha</div>';return;}
+  const turnosDia=turnos.filter(t=>t.fecha===fecha);
+  const porHora={};turnosDia.forEach(t=>{if(t.hora)porHora[t.hora]=t;});
+  const cont=document.getElementById('grilla-container');
+  cont.innerHTML=SLOTS_GRILLA.map(slot=>{
+    const t=porHora[slot];
+    if(t){
+      const siglas=parsearSiglas(t.siglas).join(' · ');
+      const{total}=calcularTurno(t.siglas);
+      const tel=resolverTelefono(t);
+      return `<div class="grilla-slot"><div class="grilla-hora">${slot}</div><div class="grilla-celda ocupado" onclick="abrirModal(${t.id})"><div class="grilla-nombre">${t.cliente}${tel?` <span style="font-size:11px;color:#a89890;font-weight:400">${tel}</span>`:''}</div><div class="grilla-zonas">${siglas}</div><div class="grilla-total">$${total.toLocaleString('es-AR')}${t.anticipo?` · Anticipo $${(t.anticipoMonto||0).toLocaleString('es-AR')}`:''}</div></div></div>`;
+    }else{
+      return `<div class="grilla-slot"><div class="grilla-hora">${slot}</div><div class="grilla-celda libre" onclick="precargarHora('${slot}')"><span style="font-size:12px">+ Libre</span></div></div>`;
+    }
+  }).join('');
+}
+
+function cambiarDiaGrilla(delta){
+  const el=document.getElementById('grilla-fecha');
+  const d=el.value?new Date(el.value+'T00:00:00'):new Date();
+  d.setDate(d.getDate()+delta);
+  el.value=d.toISOString().split('T')[0];renderGrilla();
+}
+
+function precargarHora(slot){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-nuevo').classList.add('active');
+  document.querySelector('.tab').classList.add('active');
+  const fecha=document.getElementById('grilla-fecha').value;
+  if(fecha)document.getElementById('fecha-fija').value=fecha;
+  document.getElementById('f-hora').value=slot;
+  setTimeout(()=>{
+    const btns=document.getElementById('hora-slots').querySelectorAll('button');
+    btns.forEach(b=>{if(b.textContent===slot){b.style.background='#b8877a';b.style.color='#fff';b.style.borderColor='#b8877a';}else{b.style.background='#fff';b.style.color='#5a3800';b.style.borderColor='#e0d8d2';}});
+    renderSiglasButtons();
+  },50);
+}
+
+function sincronizarFecha(){
+  const fecha=document.getElementById('fecha-fija').value;
+  const ff=document.getElementById('filtro-fecha');
+  if(ff)ff.value=fecha;
+  if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+}
+
+function initApp(){
+  const ff=document.getElementById('fecha-fija');if(ff)ff.value=hoy();
+  const gf=document.getElementById('grilla-fecha');if(gf)gf.value=hoy();
+  actualizarDisplayAnticipo();
+  initCostos();
+  cargarDesdeSB().then(()=>{
+    renderTratamientos();renderSiglasButtons();renderClientes();renderAgenda();renderStats();renderGrilla();
+    if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+  });
+  setInterval(async()=>{
+    try{
+      const[t,c]=await Promise.all([sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),sbGet('clientes','?select=*&order=nombre.asc')]);
+      if(Array.isArray(t)&&t.length)turnos=t.map(mapTurnoFromSB);
+      if(Array.isArray(c)&&c.length)clientes=c.map(mapClienteFromSB);
+      renderClientes();
+      const tabAgenda=document.getElementById('tab-agenda');if(tabAgenda&&tabAgenda.classList.contains('active')){renderAgenda();renderStats();}
+      const tabGrilla=document.getElementById('tab-grilla');if(tabGrilla&&tabGrilla.classList.contains('active')){renderGrilla();}
+      if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+    }catch(e){console.error('Auto-refresh error:',e);}
+  },30000);
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initApp);}else{initApp();}
+</script>
+</body>
+</html>
