@@ -1116,24 +1116,39 @@ function exportarExcel(){
   const R_TOTAL_SEÑAS = resRow(2);
   const R_INGRESOS    = resRow(3);
 
+  // Calcular todos los valores directo en JS
+  const totalEfectivo = turnosDia.filter(t=>!t.noVino).reduce((s,t)=>{
+    const{total}=calcularTurno(t.siglas);
+    const base = t.promo ? Math.round(total*(1-t.promoPct/100)) : total;
+    return s + base + (t.redondeo||0) - (t.anticipo?(t.anticipoMonto||0):0);
+  },0);
+  const costoOperadora = hs*(d.precioHora||0)+(d.redondeo||0);
+  const costoComida    = d.comida||0;
+  const pulsosUsados   = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
+  const costoPulsos    = Math.round(pulsosUsados*1.311*100)/100;
+  const ingresos       = totalEfectivo + totalSeñas;
+  const nicoBase       = ingresos - costoOperadora - costoComida - costoPulsos;
+  const costoNico      = Math.round(nicoBase*0.1*100)/100;
+  const totalCostos    = costoOperadora + costoComida + costoPulsos + costoNico;
+  const gananciaNeta   = ingresos - totalCostos;
+
   rows.push(['RESUMEN DEL DÍA']);
-  rows.push(['Total efectivo','',{f:sumTurnos}]);
+  rows.push(['Total efectivo','',totalEfectivo]);
   rows.push(['Total señas','',totalSeñas]);
-  rows.push(['Ingresos totales','',{f:`ROUND(C${R_TOTAL_COBRADO}+C${R_TOTAL_SEÑAS},2)`}]);
+  rows.push(['Ingresos totales','',ingresos]);
   rows.push([]);
   rows.push(['COSTOS']);
-  rows.push(['Operadora','',{f:`-ROUND(C${R_HS}*C${R_PRECIO_HORA}+C${R_REDONDEO},2)`}]);
+  rows.push(['Operadora','',-costoOperadora]);
   rows.push(['  Horas trabajadas','',hs]);
   rows.push(['  Precio/hora','',d.precioHora||0]);
   rows.push(['  Redondeo','',d.redondeo||0]);
-  rows.push(['Comida','',-Math.abs(d.comida||0)]);
-  rows.push(['Pulsos','',-Math.abs(Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0))*1.311)]);
-  rows.push(['10% Nico','',{f:`-ROUND((C${R_TOTAL_COBRADO}+C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO})*0.1,2)`}]);
+  rows.push(['Comida','',-costoComida]);
+  rows.push(['Pulsos','',-costoPulsos]);
+  rows.push(['10% Nico','',-costoNico]);
   rows.push([]);
-  rows.push(['Total costos','',{f:`ROUND(C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO},2)`}]);
+  rows.push(['Total costos','',-totalCostos]);
   rows.push([]);
-  rows.push([]);
-  rows.push(['Ganancia neta','',{f:`ROUND(C${R_INGRESOS}+C${R_TOTAL_COSTOS},2)`}]);
+  rows.push(['Ganancia neta','',gananciaNeta]);
   const wsFicha=XLSX.utils.aoa_to_sheet(rows);
   wsFicha['!cols']=[22,8,32,12,8,12,12,12,20].map(w=>({wch:w}));
   // Red formatting for cost rows (column C = index 2)
