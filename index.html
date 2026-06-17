@@ -1482,7 +1482,7 @@ function initApp(){
   const ff=document.getElementById('fecha-fija');if(ff)ff.value=hoy();
   const gf=document.getElementById('grilla-fecha');if(gf)gf.value=hoy();
   actualizarDisplayAnticipo();
-  initCostos();
+  try{initCostos();}catch(e){console.error('initCostos error:',e);}
   cargarDesdeSB().then(()=>{
     renderTratamientos();
     renderSiglasButtons();
@@ -1493,7 +1493,6 @@ function initApp(){
     if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
   }).catch(e=>{
     console.error('Error cargando datos:',e);
-    // Render anyway with whatever we have
     renderAgenda();renderStats();renderTratamientos();renderSiglasButtons();
   });
   setInterval(async()=>{
