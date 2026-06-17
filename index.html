@@ -1050,15 +1050,14 @@ function enviarWA(){
 }
 
 function renderStats(){
-  const h=hoy(),mes=h.slice(0,7);
-  const th=turnos.filter(t=>t.fecha===h);
-  const thPresentes=th.filter(t=>!t.noVino);
-  const rh=thPresentes.reduce((s,t)=>s+(t.totalFinal!==undefined?t.totalFinal:calcularTurno(t.siglas).total),0);
-  const rm=turnos.filter(t=>t.fecha&&t.fecha.startsWith(mes)&&!t.noVino).reduce((s,t)=>s+(t.totalFinal!==undefined?t.totalFinal:calcularTurno(t.siglas).total),0);
+  const fechaFiltro = document.getElementById('filtro-fecha')?.value || hoy();
+  const td = turnos.filter(t=>t.fecha===fechaFiltro);
+  const tdPresentes = td.filter(t=>!t.noVino);
+  const rd = tdPresentes.reduce((s,t)=>s+(t.totalFinal!==undefined?t.totalFinal:calcularTurno(t.siglas).total),0);
+  const fechaLabel = fechaFiltro ? fechaFiltro.split('-').reverse().join('/') : 'hoy';
   document.getElementById('stats-container').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Turnos hoy</div><div class="stat-value">${th.length}</div></div>
-    <div class="stat-card"><div class="stat-label">Recaudación hoy</div><div class="stat-value" style="font-size:16px">$${rh.toLocaleString('es-AR')}</div></div>
-    <div class="stat-card"><div class="stat-label">Total del mes</div><div class="stat-value" style="font-size:16px">$${rm.toLocaleString('es-AR')}</div></div>
+    <div class="stat-card"><div class="stat-label">Turnos ${fechaLabel}</div><div class="stat-value">${td.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Recaudación ${fechaLabel}</div><div class="stat-value" style="font-size:16px">$${rd.toLocaleString('es-AR')}</div></div>
     <div class="stat-card"><div class="stat-label">Turnos totales</div><div class="stat-value">${turnos.length}</div></div>`;
 }
 
@@ -1090,7 +1089,8 @@ function exportarExcel(){
     const diferencia=t.redondeo||0;
     const zonasStr=items.map(i=>i.qty>1?i.nombre+' x'+i.qty:i.nombre).join(', ');
     const rowNum=R_FIRST_TURNO+i;
-    rows.push([t.cliente,t.hora||'',zonasStr,total,promoOff||'',seña||'',diferencia||'',{f:`ROUND(D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum}),2)`},t.notas||'']);
+    const noVinoTag=t.noVino?' [NO VINO]':'';
+    rows.push([t.cliente,t.hora||'',zonasStr,t.noVino?0:total,t.noVino?'':(promoOff||''),t.noVino?'':(seña||''),t.noVino?'':(diferencia||''),t.noVino?0:{f:`ROUND(D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum}),2)`},(t.notas||'')+noVinoTag]);
   });
   rows.push([]);rows.push([]);
   const pulsoRow=R_PULSOS_DATA;
@@ -1118,6 +1118,10 @@ function exportarExcel(){
   rows.push(['Total costos','',{f:`ROUND(C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO},2)`}]);
   rows.push([]);
   rows.push(['Ganancia neta','',{f:`ROUND(C${R_TOTAL_COBRADO}-C${R_TOTAL_COSTOS},2)`}]);
+  rows.push([]);
+  // Total anticipos
+  const totalAnticipados = turnosDia.filter(t=>t.anticipo&&!t.noVino).reduce((s,t)=>s+(t.anticipoMonto||0),0);
+  rows.push(['Total anticipos cobrados','',totalAnticipados]);
   const wsFicha=XLSX.utils.aoa_to_sheet(rows);
   wsFicha['!cols']=[22,8,32,12,8,12,12,12,20].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,wsFicha,'Ficha');
