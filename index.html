@@ -427,8 +427,14 @@ tr:hover td{background:#fdf9f7}
       </div>
       <div class="grid2" style="margin-bottom:10px">
         <div class="field">
-          <label>Precio por hora ($)</label>
-          <input type="number" id="co-precio-hora" placeholder="0" min="0" oninput="calcCostos()">
+          <label style="display:flex;align-items:center;gap:8px">
+            Precio por hora ($)
+            <label style="font-size:11px;color:#7a6a64;display:flex;align-items:center;gap:4px;font-weight:400;cursor:pointer">
+              <input type="checkbox" id="co-precio-hora-fijo" onchange="fijarPrecioHora()" style="cursor:pointer">
+              fijar siempre
+            </label>
+          </label>
+          <input type="number" id="co-precio-hora" placeholder="0" min="0" oninput="calcCostos();if(document.getElementById('co-precio-hora-fijo').checked)localStorage.setItem('halime_precio_hora_fijo',this.value)">
         </div>
         <div class="field">
           <label>Redondeo ($)</label>
@@ -460,8 +466,8 @@ tr:hover td{background:#fdf9f7}
           <input type="number" id="co-pulsos-cierre" placeholder="0" min="0" oninput="calcCostos()">
         </div>
         <div class="field">
-          <label>Precio pulso ($)</label>
-          <input type="number" id="co-precio-pulso" placeholder="0.00" min="0" step="0.01" oninput="calcCostos()">
+          <label>Precio pulso ($) <span style="font-size:11px;color:#c9a96e">(fijo)</span></label>
+          <input type="number" id="co-precio-pulso" value="1.311" step="0.001" readonly style="background:#f5f0eb;color:#a89890;cursor:not-allowed">
         </div>
         <div class="field">
           <label>Valor del dólar ($)</label>
@@ -1079,6 +1085,20 @@ function limpiarFormulario(){
 function hoy(){ return new Date().toISOString().split('T')[0]; }
 
 /* ── AGENDA ── */
+function toggleNoVino(id, noVino){
+  const t = turnos.find(x=>x.id===id);
+  if(!t) return;
+  t.noVino = noVino;
+  // Update in Supabase
+  fetch(SB_URL+'/rest/v1/turnos?id=eq.'+id,{
+    method:'PATCH',
+    headers:{...SB_HEADERS,'Prefer':'return=minimal'},
+    body:JSON.stringify({notas: noVino ? '[NO VINO] '+(t.notas||'').replace('[NO VINO] ','') : (t.notas||'').replace('[NO VINO] ','')})
+  });
+  renderAgenda();
+  renderStats();
+}
+
 function renderAgenda(){
   const fc=document.getElementById('filtro-cliente').value.toLowerCase();
   const ff=document.getElementById('filtro-fecha').value;
@@ -1105,7 +1125,15 @@ function turnoCard(t){
   const {items,total}=calcularTurno(t.siglas);
   const totalMostrar = t.totalFinal !== undefined ? t.totalFinal : total;
   const tel=resolverTelefono(t);
-  return `<div class="turno-card">
+  const noVino = t.noVino || false;
+  const cardStyle = noVino ? 'opacity:0.45;background:#e8e0dc;filter:grayscale(0.3)' : '';
+  return `<div class="turno-card" style="position:relative;${cardStyle}">
+    <div style="position:absolute;top:8px;right:8px;z-index:2">
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#a89890;cursor:pointer;background:rgba(255,255,255,0.8);padding:2px 6px;border-radius:10px">
+        <input type="checkbox" ${noVino?'checked':''} onchange="toggleNoVino(${t.id},this.checked)" style="cursor:pointer">
+        No vino
+      </label>
+    </div>
     <div class="turno-header">
       <div>
         <div class="turno-cliente">${t.cliente}${tel?`<span class="tel-badge">${tel}</span>`:''}</div>
@@ -1305,8 +1333,9 @@ function enviarWA(){
 function renderStats(){
   const h=hoy(), mes=h.slice(0,7);
   const th=turnos.filter(t=>t.fecha===h);
-  const rh=th.reduce((s,t)=>s+calcularTurno(t.siglas).total,0);
-  const rm=turnos.filter(t=>t.fecha&&t.fecha.startsWith(mes)).reduce((s,t)=>s+calcularTurno(t.siglas).total,0);
+  const thPresentes=th.filter(t=>!t.noVino);
+  const rh=thPresentes.reduce((s,t)=>s+(t.totalFinal!==undefined?t.totalFinal:calcularTurno(t.siglas).total),0);
+  const rm=turnos.filter(t=>t.fecha&&t.fecha.startsWith(mes)&&!t.noVino).reduce((s,t)=>s+(t.totalFinal!==undefined?t.totalFinal:calcularTurno(t.siglas).total),0);
   document.getElementById('stats-container').innerHTML=`
     <div class="stat-card"><div class="stat-label">Turnos hoy</div><div class="stat-value">${th.length}</div></div>
     <div class="stat-card"><div class="stat-label">Recaudación hoy</div><div class="stat-value" style="font-size:16px">$${rh.toLocaleString('es-AR')}</div></div>
@@ -1824,6 +1853,7 @@ let costos = JSON.parse(localStorage.getItem('halime_costos') || '{}');
 
 function initCostos(){
   document.getElementById('co-fecha').value = hoy();
+      initPrecioHoraFijo();
   cargarCostosDia(hoy());
   calcCostos();
   document.getElementById('co-fecha').addEventListener('change', function(){
@@ -1837,13 +1867,48 @@ function cargarCostosDia(fecha){
   const d = costos[fecha] || {};
   document.getElementById('co-entrada').value = d.entrada||'';
   document.getElementById('co-salida').value  = d.salida||'';
-  document.getElementById('co-precio-hora').value = d.precioHora||'';
+  // precio hora: usar fijo guardado o el del checkbox
+  const precioFijo = localStorage.getItem('halime_precio_hora_fijo');
+  const usarFijo = document.getElementById('co-precio-hora-fijo')?.checked;
+  if(usarFijo && precioFijo) {
+    document.getElementById('co-precio-hora').value = precioFijo;
+  } else {
+    document.getElementById('co-precio-hora').value = d.precioHora||'';
+  }
   document.getElementById('co-redondeo').value    = d.redondeo||'';
   document.getElementById('co-comida').value       = d.comida||'';
-  document.getElementById('co-pulsos-inicio').value = d.pulsosInicio||'';
+  // pulsos inicio: si no hay dato, usar pulsos cierre de fecha anterior
+  if(d.pulsosInicio){
+    document.getElementById('co-pulsos-inicio').value = d.pulsosInicio;
+  } else {
+    // buscar fecha anterior con datos
+    const fechasAnteriores = Object.keys(costos).filter(f=>f<fecha).sort();
+    const fechaAnterior = fechasAnteriores[fechasAnteriores.length-1];
+    const dAnterior = fechaAnterior ? costos[fechaAnterior] : null;
+    document.getElementById('co-pulsos-inicio').value = dAnterior?.pulsosCierre||'';
+  }
   document.getElementById('co-pulsos-cierre').value = d.pulsosCierre||'';
-  document.getElementById('co-precio-pulso').value  = d.precioPulso||'';
+  document.getElementById('co-precio-pulso').value  = 1.311; // siempre fijo
   document.getElementById('co-dolar').value          = d.dolar||'';
+}
+
+function fijarPrecioHora(){
+  const cb = document.getElementById('co-precio-hora-fijo');
+  const val = document.getElementById('co-precio-hora').value;
+  if(cb.checked){
+    localStorage.setItem('halime_precio_hora_fijo', val);
+  } else {
+    localStorage.removeItem('halime_precio_hora_fijo');
+  }
+}
+
+function initPrecioHoraFijo(){
+  const fijo = localStorage.getItem('halime_precio_hora_fijo');
+  const cb = document.getElementById('co-precio-hora-fijo');
+  if(fijo && cb){
+    cb.checked = true;
+    document.getElementById('co-precio-hora').value = fijo;
+  }
 }
 
 function calcCostos(){
