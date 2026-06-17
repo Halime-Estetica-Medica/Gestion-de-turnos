@@ -277,9 +277,9 @@ tr:hover td{background:#fdf9f7}
     <div class="stats-grid" id="stats-container"></div>
     <div class="card">
       <div class="filter-row">
-        <input type="text" id="filtro-cliente" placeholder="Buscar cliente..." oninput="renderAgenda()" style="flex:1;min-width:120px">
-        <input type="date" id="filtro-fecha" onchange="renderAgenda()">
-        <input type="text" id="filtro-sigla" placeholder="Sigla..." oninput="renderAgenda()" style="width:90px">
+        <input type="text" id="filtro-cliente" placeholder="Buscar cliente..." oninput="renderAgenda();renderStats()" style="flex:1;min-width:120px">
+        <input type="date" id="filtro-fecha" onchange="renderAgenda();renderStats()">
+        <input type="text" id="filtro-sigla" placeholder="Sigla..." oninput="renderAgenda();renderStats()" style="width:90px">
         <button class="btn-secondary" onclick="limpiarFiltros()" style="color:#c0392b;border-color:#f0c0bc">Limpiar</button>
         <button class="btn-secondary" onclick="exportarExcel()" style="color:#2d7a4a;border-color:#c0e8ce">↓ Exportar Excel</button>
       </div>
@@ -461,7 +461,7 @@ tr:hover td{background:#fdf9f7}
       </div>
       <div id="em-anticipo-wrap" style="display:none;align-items:center;gap:6px">
         <span style="font-size:13px;color:#a89890">$</span>
-        <input type="number" id="em-anticipo-monto" placeholder="0" min="0" oninput="actualizarEmSaldo()" style="width:110px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
+        <input type="number" id="em-anticipo-monto" placeholder="0" min="0" oninput="actualizarEmSaldo();actualizarEmPromo()" style="width:110px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
       </div>
       <div id="em-saldo-wrap" style="display:none;font-size:13px;color:#a89890;margin-left:auto">Saldo: <span id="em-saldo" style="font-weight:600;color:#b8877a"></span></div>
     </div>
@@ -475,7 +475,7 @@ tr:hover td{background:#fdf9f7}
         <input type="number" id="em-promo-pct" placeholder="0" min="0" max="100" oninput="actualizarEmPromo()" style="width:70px;padding:6px 8px;border:1px solid #e0d8d2;border-radius:8px;font-size:14px;font-family:inherit">
         <span style="font-size:13px;color:#a89890">%</span>
       </div>
-      <div id="em-promo-total" style="display:none;font-size:13px;color:#a89890;margin-left:auto">Total con descuento: <span id="em-promo-resultado" style="font-weight:600;color:#b8877a"></span></div>
+      <div id="em-promo-total" style="display:flex;font-size:13px;color:#a89890;margin-left:auto"><span id="em-promo-label">Total a cobrar:</span>&nbsp;<span id="em-promo-resultado" style="font-weight:600;color:#b8877a"></span></div>
     </div>
     <!-- Redondeo en edición -->
     <div style="background:#fdf9f7;border:1px solid #ede8e4;border-radius:10px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px">
@@ -978,15 +978,21 @@ function actualizarEmPromo(){
   const wrap=document.getElementById('em-promo-wrap');
   const totalDiv=document.getElementById('em-promo-total');
   wrap.style.display=check.checked?'flex':'none';
-  totalDiv.style.display=check.checked?'flex':'none';
-  if(check.checked){
-    const pct=parseFloat(document.getElementById('em-promo-pct').value)||0;
-    const redondeo=parseFloat(document.getElementById('em-redondeo').value)||0;
-    const siglas=document.getElementById('em-siglas').value;
-    const{total}=calcularTurno(siglas);
-    const resultado=Math.round(total*(1-pct/100))+redondeo;
-    document.getElementById('em-promo-resultado').textContent='$'+resultado.toLocaleString('es-AR');
-  }
+  totalDiv.style.display='flex';
+  const pct=check.checked?(parseFloat(document.getElementById('em-promo-pct').value)||0):0;
+  const redondeo=parseFloat(document.getElementById('em-redondeo').value)||0;
+  const anticipoCheck=document.getElementById('em-anticipo-check').checked;
+  const anticipo=anticipoCheck?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0;
+  const siglas=document.getElementById('em-siglas').value;
+  const{total}=calcularTurno(siglas);
+  const totalConDesc=Math.round(total*(1-pct/100));
+  const resultado=totalConDesc+redondeo-anticipo;
+  document.getElementById('em-promo-resultado').textContent='$'+resultado.toLocaleString('es-AR');
+  document.getElementById('em-promo-total').querySelector ? null : null;
+  // update label
+  const lbl = anticipoCheck ? `Total a cobrar (con desc. y anticipo):` : `Total con descuento/ajustes:`;
+  const lblEl = document.getElementById('em-promo-label');
+  if(lblEl) lblEl.textContent = lbl;
 }
 
 function actualizarEmPreview(){
@@ -1011,7 +1017,8 @@ function guardarEdicion(){
   const promoPct=parseFloat(document.getElementById('em-promo-pct').value)||0;
   const redondeo=parseFloat(document.getElementById('em-redondeo').value)||0;
   const{total}=calcularTurno(siglas);
-  const totalFinal=promo?Math.round(total*(1-promoPct/100))+redondeo:total+redondeo;
+  const anticipoMonto2=document.getElementById('em-anticipo-check').checked?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0;
+  const totalFinal=promo?Math.round(total*(1-promoPct/100))+redondeo-anticipoMonto2:total+redondeo-anticipoMonto2;
   turnos[idx]={...turnos[idx],cliente,telefono:cDB?cDB.telefono||'':turnos[idx].telefono||'',fecha,hora,siglas,notas:document.getElementById('em-notas').value.trim(),anticipo:document.getElementById('em-anticipo-check').checked,anticipoMonto:document.getElementById('em-anticipo-check').checked?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0,promo,promoPct,redondeo,totalFinal};
   guardarTurnoSB(turnos[idx]).then(()=>{
     document.getElementById('edit-modal').style.display='none';
@@ -1069,9 +1076,8 @@ function limpiarFiltros(){
 function exportarExcel(){
   if(!turnos.length){showAlert('No hay turnos para exportar.','error');return;}
   const wb=XLSX.utils.book_new();
-  const cFecha=document.getElementById('co-fecha')?.value;
-  const aFecha=document.getElementById('fecha-fija')?.value;
-  const fechaFiltro=(cFecha||aFecha||hoy()).substring(0,10);
+  // Use agenda filter date directly
+  const fechaFiltro=(document.getElementById('filtro-fecha')?.value||hoy()).substring(0,10);
   const turnosDia=[...turnos].filter(t=>t.fecha===fechaFiltro).sort((a,b)=>a.hora>b.hora?1:-1);
   const d=costos[fechaFiltro]||{};
   const pUsados=Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
