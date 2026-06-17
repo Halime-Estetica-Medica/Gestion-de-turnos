@@ -1357,7 +1357,7 @@ function cargarCostosDia(fecha){
   else{document.getElementById('co-precio-hora').value=d.precioHora||'';}
   document.getElementById('co-redondeo').value=d.redondeo||'';
   document.getElementById('co-comida').value=d.comida||'';
-  document.getElementById('co-varios').value=d.varios||'';
+  if(document.getElementById('co-varios')) document.getElementById('co-varios').value=d.varios||'';
   if(d.pulsosInicio){document.getElementById('co-pulsos-inicio').value=d.pulsosInicio;}
   else{
     const fechasAnteriores=Object.keys(costos).filter(f=>f<fecha).sort();
@@ -1484,8 +1484,17 @@ function initApp(){
   actualizarDisplayAnticipo();
   initCostos();
   cargarDesdeSB().then(()=>{
-    renderTratamientos();renderSiglasButtons();renderClientes();renderAgenda();renderStats();renderGrilla();
+    renderTratamientos();
+    renderSiglasButtons();
+    renderClientes();
+    renderAgenda();
+    renderStats();
+    renderGrilla();
     if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+  }).catch(e=>{
+    console.error('Error cargando datos:',e);
+    // Render anyway with whatever we have
+    renderAgenda();renderStats();renderTratamientos();renderSiglasButtons();
   });
   setInterval(async()=>{
     try{
