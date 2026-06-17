@@ -1102,8 +1102,8 @@ function exportarExcel(){
   });
   rows.push([]);rows.push([]);
   const pulsoRow=R_PULSOS_DATA;
-  rows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Valor pulso (USD)','Dólar','Valor pulso ($)','Costo pulsos']);
-  rows.push([d.pulsosInicio||0,d.pulsosCierre||0,{f:`B${pulsoRow}-A${pulsoRow}`},0.093,d.dolar||0,{f:`ROUND(E${pulsoRow}*D${pulsoRow}/100,2)`},{f:`ROUND(C${pulsoRow}*F${pulsoRow},2)`}]);
+  rows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Precio pulso ($)','Costo pulsos']);
+  rows.push([d.pulsosInicio||0,d.pulsosCierre||0,{f:`B${pulsoRow}-A${pulsoRow}`},1.311,'',{f:`ROUND(C${pulsoRow}*D${pulsoRow},2)`}]);
   rows.push([]);rows.push([]);
   const totEfvoCol='H';
   const sumTurnos=nTurnos>0?`SUM(${totEfvoCol}${R_FIRST_TURNO}:${totEfvoCol}${R_LAST_TURNO})`:'0';
@@ -1126,8 +1126,8 @@ function exportarExcel(){
   rows.push(['  Horas trabajadas','',hs]);
   rows.push(['  Precio/hora','',d.precioHora||0]);
   rows.push(['  Redondeo','',d.redondeo||0]);
-  rows.push(['Comida','',{f:`-ROUND(C${R_COMIDA},2)`}]);
-  rows.push(['Pulsos','',{f:`-ROUND(G${pulsoRow},2)`}]);
+  rows.push(['Comida','',-Math.abs(d.comida||0)]);
+  rows.push(['Pulsos','',-Math.abs(Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0))*1.311)]);
   rows.push(['10% Nico','',{f:`-ROUND((C${R_TOTAL_COBRADO}+C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO})*0.1,2)`}]);
   rows.push([]);
   rows.push(['Total costos','',{f:`ROUND(C${R_OPERADORA}+C${R_COMIDA}+C${R_PULSOS_COSTO}+C${R_NICO},2)`}]);
@@ -1381,9 +1381,9 @@ function calcCostos(){
   const pulsosInicio=parseInt(document.getElementById('co-pulsos-inicio').value)||0;
   const pulsosCierre=parseInt(document.getElementById('co-pulsos-cierre').value)||0;
   const totalPulsos=Math.max(0,pulsosCierre-pulsosInicio);
-  const costoPulsosTotalPesos=totalPulsos*precioPulso*dolar;
+  const costoPulsosTotalPesos=totalPulsos*precioPulso; // precio pulso ya es en pesos ($1.311)
   const infoEl=document.getElementById('co-pulsos-total-info');
-  if(totalPulsos>0&&precioPulso>0&&dolar>0){infoEl.textContent=`Pulsos usados: ${totalPulsos} × USD ${precioPulso} × $${dolar.toLocaleString('es-AR')} = $${costoPulsosTotalPesos.toLocaleString('es-AR')}`;}
+  if(totalPulsos>0&&precioPulso>0){infoEl.textContent=`Pulsos usados: ${totalPulsos} × $${precioPulso} = $${costoPulsosTotalPesos.toLocaleString('es-AR')}`;}
   else if(pulsosInicio>0||pulsosCierre>0){infoEl.textContent=totalPulsos>0?`Pulsos usados: ${totalPulsos}`:'El cierre debe ser mayor que el inicio.';}
   else{infoEl.textContent='';}
   const totalCostos=costoOperadora+comida+costoPulsosTotalPesos;
