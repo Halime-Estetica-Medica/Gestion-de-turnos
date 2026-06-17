@@ -372,6 +372,10 @@ tr:hover td{background:#fdf9f7}
       <div class="field"><label>Gasto en comida ($)</label><input type="number" id="co-comida" placeholder="0" min="0" oninput="calcCostos()"></div>
     </div>
     <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Varios</div>
+      <div class="field"><label>Gastos varios ($)</label><input type="number" id="co-varios" placeholder="0" min="0" oninput="calcCostos()"></div>
+    </div>
+    <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Pulsos</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
         <div class="field"><label>Pulsos inicio</label><input type="number" id="co-pulsos-inicio" placeholder="0" min="0" oninput="calcCostos()"></div>
@@ -544,7 +548,7 @@ async function sbUpsert(table,body){
 function mapTurnoFromSB(r){return{id:r.id,cliente:r.cliente,telefono:r.telefono||'',fecha:r.fecha,hora:r.hora||'',siglas:r.siglas||'[]',notas:r.notas||'',anticipo:r.anticipo||false,anticipoMonto:r.anticipo_monto||0,promo:r.promo||false,promoPct:r.promo_pct||0,redondeo:r.redondeo||0,totalFinal:r.total_final||0,creado:r.creado||''};}
 function mapClienteFromSB(r){return{nombre:r.nombre,telefono:r.telefono||'',mail:r.mail||''};}
 function mapTratFromSB(r){return{sigla:r.sigla,nombre:r.nombre,precio:r.precio||0,color:r.color||'#f5ede9'};}
-function mapCostoFromSB(r){return{entrada:r.entrada||'',salida:r.salida||'',precioHora:r.precio_hora||0,redondeo:r.redondeo||0,comida:r.comida||0,pulsosInicio:r.pulsos_inicio||0,pulsosCierre:r.pulsos_cierre||0,precioPulso:r.precio_pulso||0,dolar:r.dolar||0};}
+function mapCostoFromSB(r){return{entrada:r.entrada||'',salida:r.salida||'',precioHora:r.precio_hora||0,redondeo:r.redondeo||0,comida:r.comida||0,varios:r.varios||0,pulsosInicio:r.pulsos_inicio||0,pulsosCierre:r.pulsos_cierre||0,precioPulso:r.precio_pulso||0,dolar:r.dolar||0};}
 
 async function cargarDesdeSB(){
   try{
@@ -582,7 +586,7 @@ async function insertarTratamientoSB(t,orden){
   if(!r.ok){const txt=await r.text();console.error('INSERT failed para',t.sigla,r.status,txt);}
   return r.ok;
 }
-async function guardarCostosSB(fecha,d){return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});}
+async function guardarCostosSB(fecha,d){return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,varios:d.varios||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});}
 
 let tratamientos=JSON.parse(localStorage.getItem('halime_tratamientos')||'null')||DEFAULT_TRATAMIENTOS;
 let turnos=JSON.parse(localStorage.getItem('halime_turnos')||'[]');
@@ -1124,12 +1128,13 @@ function exportarExcel(){
   },0);
   const costoOperadora = hs*(d.precioHora||0)+(d.redondeo||0);
   const costoComida    = d.comida||0;
+  const costoVarios    = d.varios||0;
   const pulsosUsados   = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
   const costoPulsos    = Math.round(pulsosUsados*1.311*100)/100;
   const ingresos       = totalEfectivo + totalSeñas;
-  const nicoBase       = ingresos - costoOperadora - costoComida - costoPulsos;
+  const nicoBase       = ingresos - costoOperadora - costoComida - costoVarios - costoPulsos;
   const costoNico      = Math.round(nicoBase*0.1*100)/100;
-  const totalCostos    = costoOperadora + costoComida + costoPulsos + costoNico;
+  const totalCostos    = costoOperadora + costoComida + costoVarios + costoPulsos + costoNico;
   const gananciaNeta   = ingresos - totalCostos;
 
   rows.push(['RESUMEN DEL DÍA']);
@@ -1143,6 +1148,7 @@ function exportarExcel(){
   rows.push(['  Precio/hora','',d.precioHora||0]);
   rows.push(['  Redondeo','',d.redondeo||0]);
   rows.push(['Comida','',-costoComida]);
+  rows.push(['Varios','',-costoVarios]);
   rows.push(['Pulsos','',-costoPulsos]);
   rows.push(['10% Nico','',-costoNico]);
   rows.push([]);
@@ -1351,6 +1357,7 @@ function cargarCostosDia(fecha){
   else{document.getElementById('co-precio-hora').value=d.precioHora||'';}
   document.getElementById('co-redondeo').value=d.redondeo||'';
   document.getElementById('co-comida').value=d.comida||'';
+  document.getElementById('co-varios').value=d.varios||'';
   if(d.pulsosInicio){document.getElementById('co-pulsos-inicio').value=d.pulsosInicio;}
   else{
     const fechasAnteriores=Object.keys(costos).filter(f=>f<fecha).sort();
@@ -1401,9 +1408,9 @@ function calcCostos(){
   if(totalPulsos>0&&precioPulso>0){infoEl.textContent=`Pulsos usados: ${totalPulsos} × $${precioPulso} = $${costoPulsosTotalPesos.toLocaleString('es-AR')}`;}
   else if(pulsosInicio>0||pulsosCierre>0){infoEl.textContent=totalPulsos>0?`Pulsos usados: ${totalPulsos}`:'El cierre debe ser mayor que el inicio.';}
   else{infoEl.textContent='';}
-  const totalCostos=costoOperadora+comida+costoPulsosTotalPesos;
+  const totalCostos=costoOperadora+comida+varios+costoPulsosTotalPesos;
   const resumen=document.getElementById('co-resumen');
-  const filas=[{label:'Operadora ('+horasStr+')',valor:horasTrabajadas*precioHora},{label:'Redondeo',valor:redondeo},{label:'Comida',valor:comida},{label:`Pulsos (${totalPulsos} usados: ${pulsosInicio}→${pulsosCierre})`,valor:costoPulsosTotalPesos}].filter(f=>f.valor>0);
+  const filas=[{label:'Operadora ('+horasStr+')',valor:horasTrabajadas*precioHora},{label:'Redondeo',valor:redondeo},{label:'Comida',valor:comida},{label:'Varios',valor:varios},{label:`Pulsos (${totalPulsos} usados: ${pulsosInicio}→${pulsosCierre})`,valor:costoPulsosTotalPesos}].filter(f=>f.valor>0);
   if(!filas.length){resumen.innerHTML='<div style="text-align:center;color:#a89890;font-size:13px;padding:1rem">Completá los campos para ver el resumen.</div>';return;}
   resumen.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid #f2eeeb"><span style="color:#5a3800">${f.label}</span><span style="font-weight:500">$${f.valor.toLocaleString('es-AR')}</span></div>`).join('')+`<div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:17px;font-weight:500;color:#2a1a16;border-top:1px solid #e8e0db;margin-top:6px"><span>Total costos del día</span><span>$${totalCostos.toLocaleString('es-AR')}</span></div>`;
 }
@@ -1411,13 +1418,13 @@ function calcCostos(){
 function guardarCostos(){
   const fecha=document.getElementById('co-fecha').value;
   if(!fecha){showAlert('Elegí una fecha primero.','error');return;}
-  costos[fecha]={entrada:document.getElementById('co-entrada').value,salida:document.getElementById('co-salida').value,precioHora:parseFloat(document.getElementById('co-precio-hora').value)||0,redondeo:parseFloat(document.getElementById('co-redondeo').value)||0,comida:parseFloat(document.getElementById('co-comida').value)||0,pulsosInicio:parseInt(document.getElementById('co-pulsos-inicio').value)||0,pulsosCierre:parseInt(document.getElementById('co-pulsos-cierre').value)||0,precioPulso:parseFloat(document.getElementById('co-precio-pulso').value)||0,dolar:parseFloat(document.getElementById('co-dolar').value)||0};
+  costos[fecha]={entrada:document.getElementById('co-entrada').value,salida:document.getElementById('co-salida').value,precioHora:parseFloat(document.getElementById('co-precio-hora').value)||0,redondeo:parseFloat(document.getElementById('co-redondeo').value)||0,comida:parseFloat(document.getElementById('co-comida').value)||0,varios:parseFloat(document.getElementById('co-varios').value)||0,pulsosInicio:parseInt(document.getElementById('co-pulsos-inicio').value)||0,pulsosCierre:parseInt(document.getElementById('co-pulsos-cierre').value)||0,precioPulso:parseFloat(document.getElementById('co-precio-pulso').value)||0,dolar:parseFloat(document.getElementById('co-dolar').value)||0};
   guardarCostosSB(fecha,costos[fecha]);
   showAlert(`✓ Costos del ${fecha.split('-').reverse().join('/')} guardados`);
 }
 
 function limpiarCostos(){
-  ['co-entrada','co-salida','co-precio-hora','co-redondeo','co-comida','co-pulsos-inicio','co-pulsos-cierre','co-precio-pulso','co-dolar'].forEach(id=>{document.getElementById(id).value='';});
+  ['co-entrada','co-salida','co-precio-hora','co-redondeo','co-comida','co-varios','co-pulsos-inicio','co-pulsos-cierre','co-precio-pulso','co-dolar'].forEach(id=>{document.getElementById(id).value='';});
   calcCostos();
 }
 
