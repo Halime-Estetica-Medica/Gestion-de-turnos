@@ -342,7 +342,7 @@ tr:hover td{background:#fdf9f7}
     <div class="card" style="margin-bottom:1rem">
       <div class="section-title">Fecha del registro</div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div class="field" style="flex:1;min-width:160px"><label>Fecha</label><input type="date" id="co-fecha"></div>
+        <div class="field" style="flex:1;min-width:160px"><label>Fecha</label><input type="date" id="co-fecha" onchange="cargarCostosDia(this.value);calcCostos();"></div>
         <div style="font-size:13px;color:#a89890;margin-top:18px">Los costos se guardan por fecha. Podés cambiar la fecha para ver o editar otro día.</div>
       </div>
     </div>
@@ -605,7 +605,7 @@ function showTab(t,btn){
   if(t==='agenda'){renderAgenda();renderStats();}
   if(t==='zonas'){renderTratamientos();}
   if(t==='clientes'){renderClientes();}
-  if(t==='costos'){const fc=document.getElementById('co-fecha')?.value||hoy();cargarCostosDia(fc);calcCostos();initPrecioHoraFijo();}
+  if(t==='costos'){calcCostos();initPrecioHoraFijo();}
 }
 
 function showAlert(msg,tipo='success'){
@@ -1342,9 +1342,7 @@ let costos=JSON.parse(localStorage.getItem('halime_costos')||'{}');
 function initCostos(){
   document.getElementById('co-fecha').value=hoy();
   initPrecioHoraFijo();
-  // No llamamos cargarCostosDia aquí - se llama después de cargarDesdeSB
   calcCostos();
-  document.getElementById('co-fecha').addEventListener('change',function(){cargarCostosDia(this.value);calcCostos();});
 }
 
 function cargarCostosDia(fecha){
