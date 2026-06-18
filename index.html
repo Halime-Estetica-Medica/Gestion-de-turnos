@@ -605,7 +605,7 @@ function showTab(t,btn){
   if(t==='agenda'){renderAgenda();renderStats();}
   if(t==='zonas'){renderTratamientos();}
   if(t==='clientes'){renderClientes();}
-  if(t==='costos'){calcCostos();initPrecioHoraFijo();}
+  if(t==='costos'){const fc=document.getElementById('co-fecha')?.value||hoy();cargarCostosDia(fc);calcCostos();initPrecioHoraFijo();}
 }
 
 function showAlert(msg,tipo='success'){
