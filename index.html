@@ -1342,7 +1342,7 @@ let costos=JSON.parse(localStorage.getItem('halime_costos')||'{}');
 function initCostos(){
   document.getElementById('co-fecha').value=hoy();
   initPrecioHoraFijo();
-  cargarCostosDia(hoy());
+  // No llamamos cargarCostosDia aquí - se llama después de cargarDesdeSB
   calcCostos();
   document.getElementById('co-fecha').addEventListener('change',function(){cargarCostosDia(this.value);calcCostos();});
 }
@@ -1491,6 +1491,10 @@ function initApp(){
     renderStats();
     renderGrilla();
     if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+    // Cargar costos del día DESPUÉS de que lleguen los datos de SB
+    const fechaCostos = document.getElementById('co-fecha')?.value || hoy();
+    cargarCostosDia(fechaCostos);
+    calcCostos();
   }).catch(e=>{
     console.error('Error cargando datos:',e);
     renderAgenda();renderStats();renderTratamientos();renderSiglasButtons();
