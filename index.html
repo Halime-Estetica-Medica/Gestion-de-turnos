@@ -547,9 +547,10 @@ const SB_HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type
 async function sbGet(table,params=''){const r=await fetch(SB_URL+'/rest/v1/'+table+params,{headers:SB_HEADERS});return r.json();}
 async function sbPost(table,body){const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(body)});return r.ok;}
 async function sbDelete(table,params){const r=await fetch(SB_URL+'/rest/v1/'+table+params,{method:'DELETE',headers:SB_HEADERS});return r.ok;}
-async function sbUpsert(table,body){
+async function sbUpsert(table,body,conflictCol=null){
   try{
-    const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
+    const url=SB_URL+'/rest/v1/'+table+(conflictCol?('?on_conflict='+conflictCol):'');
+    const r=await fetch(url,{method:'POST',headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
     if(!r.ok){const txt=await r.text();console.error('sbUpsert error en '+table+':',r.status,txt);}
     return r.ok;
   }catch(e){console.error('sbUpsert exception en '+table+':',e);return false;}
@@ -576,27 +577,24 @@ async function cargarDesdeSB(){
   }catch(e){console.error('SB error:',e);}
 }
 
-async function guardarTurnoSB(t){return sbUpsert('turnos',{id:t.id,cliente:t.cliente,telefono:t.telefono||'',fecha:t.fecha,hora:t.hora||'',siglas:t.siglas,notas:t.notas||'',anticipo:t.anticipo||false,anticipo_monto:t.anticipoMonto||0,promo:t.promo||false,promo_pct:t.promoPct||0,redondeo:t.redondeo||0,total_final:t.totalFinal||0,creado:t.creado||''});}
+async function guardarTurnoSB(t){return sbUpsert('turnos',{id:t.id,cliente:t.cliente,telefono:t.telefono||'',fecha:t.fecha,hora:t.hora||'',siglas:t.siglas,notas:t.notas||'',anticipo:t.anticipo||false,anticipo_monto:t.anticipoMonto||0,promo:t.promo||false,promo_pct:t.promoPct||0,redondeo:t.redondeo||0,total_final:t.totalFinal||0,creado:t.creado||''},'id');}
 async function eliminarTurnoSB(id){return sbDelete('turnos','?id=eq.'+id);}
-async function guardarClienteSB(c){return sbUpsert('clientes',{nombre:c.nombre,telefono:c.telefono||'',mail:c.mail||''});}
+async function guardarClienteSB(c){return sbUpsert('clientes',{nombre:c.nombre,telefono:c.telefono||'',mail:c.mail||''},'nombre');}
 async function eliminarClienteSB(nombre){return sbDelete('clientes','?nombre=eq.'+encodeURIComponent(nombre));}
 async function eliminarTratamientoSB(sigla){
   try{const r=await fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(sigla),{method:'DELETE',headers:SB_HEADERS});return r.ok;}
   catch(e){console.error('Error eliminando zona:',e);return false;}
 }
 async function guardarTratamientosSB(){
-  const results=await Promise.all(tratamientos.map((t,i)=>
-    fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(t.sigla),{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i})})
-    .then(r=>{if(!r.ok)console.error('PATCH failed para',t.sigla,r.status);return r.ok;})
-  ));
-  return results.every(Boolean);
+  const body=tratamientos.map((t,i)=>({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i}));
+  return sbUpsert('tratamientos',body,'sigla');
 }
 async function insertarTratamientoSB(t,orden){
   const r=await fetch(SB_URL+'/rest/v1/tratamientos',{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden})});
   if(!r.ok){const txt=await r.text();console.error('INSERT failed para',t.sigla,r.status,txt);}
   return r.ok;
 }
-async function guardarCostosSB(fecha,d){return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,varios:d.varios||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0});}
+async function guardarCostosSB(fecha,d){return sbUpsert('costos',{fecha,entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,varios:d.varios||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0},'fecha');}
 
 let tratamientos=JSON.parse(localStorage.getItem('halime_tratamientos')||'null')||DEFAULT_TRATAMIENTOS;
 let turnos=JSON.parse(localStorage.getItem('halime_turnos')||'[]');
