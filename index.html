@@ -132,6 +132,13 @@ tr:hover td{background:#fdf9f7}
   .tabs .tab{padding:7px 11px;font-size:12px}
   .filter-row{gap:6px}
 }
+#print-planilla{display:none}
+@media print{
+  body *{visibility:hidden}
+  #print-planilla,#print-planilla *{visibility:visible}
+  #print-planilla{display:block !important;position:absolute;left:0;top:0;width:100%}
+  * {-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -282,6 +289,7 @@ tr:hover td{background:#fdf9f7}
         <input type="text" id="filtro-sigla" placeholder="Sigla..." oninput="renderAgenda();renderStats()" style="width:90px">
         <button class="btn-secondary" onclick="limpiarFiltros()" style="color:#c0392b;border-color:#f0c0bc">Limpiar</button>
         <button class="btn-secondary" onclick="exportarExcel()" style="color:#2d7a4a;border-color:#c0e8ce">↓ Exportar Excel</button>
+        <button class="btn-secondary" onclick="imprimirPlanilla()" style="color:#1565c0;border-color:#bbdefb">🖨️ Imprimir planilla</button>
       </div>
       <div id="agenda-container"></div>
     </div>
@@ -499,6 +507,8 @@ tr:hover td{background:#fdf9f7}
   <hr class="cp-divider">
   <input type="color" id="cp-spectrum" class="cp-spectrum" title="Color personalizado">
 </div>
+
+<div id="print-planilla"></div>
 
 <script>
 const DEFAULT_TRATAMIENTOS = [
@@ -1190,6 +1200,65 @@ function exportarExcel(){
   showAlert('✓ Ficha exportada');
 }
 
+function imprimirPlanilla(){
+  const fecha=document.getElementById('filtro-fecha')?.value||hoy();
+  const fechaLabel=fecha.split('-').reverse().join('/');
+  const diaSemana=new Date(fecha+'T00:00:00').toLocaleDateString('es-AR',{weekday:'long'});
+  const lista=turnos.filter(t=>t.fecha===fecha&&!t.noVino).sort((a,b)=>(a.hora||'')>(b.hora||'')?1:-1);
+  const cont=document.getElementById('print-planilla');
+  if(!lista.length){
+    cont.innerHTML=`<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:60px;text-align:center">
+      <div style="font-size:34px;font-weight:800;color:#2a1a16;letter-spacing:1px">HALIME</div>
+      <p style="font-size:20px;color:#a89890;margin-top:20px;text-transform:capitalize">${diaSemana} ${fechaLabel}</p>
+      <p style="font-size:18px;color:#a89890;margin-top:10px">No hay turnos cargados para este día.</p>
+    </div>`;
+    window.print();return;
+  }
+  const paletteAccents=['#b8877a','#d4a090','#c9948a','#e0a899','#c98f6a'];
+  const rows=lista.map((t,i)=>{
+    const{items,total}=calcularTurno(t.siglas);
+    let totalMostrar;
+    if(t.promo&&t.promoPct){totalMostrar=Math.round(total*(1-t.promoPct/100))+(t.redondeo||0);}
+    else if(t.redondeo){totalMostrar=total+(t.redondeo||0);}
+    else{totalMostrar=total;}
+    const zonasBadges=items.map(it=>{
+      const trt=tratamientos.find(x=>x.sigla===it.sigla);
+      const color=trt?trt.color||'#f5ede9':'#f5ede9';
+      const dark=colorDark(color);
+      return `<span style="background:${color};color:${dark};font-weight:700;font-size:15px;padding:6px 14px;border-radius:20px;margin:3px 4px 3px 0;display:inline-block">${it.nombre}${it.qty>1?' x'+it.qty:''}</span>`;
+    }).join('');
+    const primerTrat=items[0]?tratamientos.find(x=>x.sigla===items[0].sigla):null;
+    const accent=primerTrat?primerTrat.color:paletteAccents[i%paletteAccents.length];
+    const accentDark=colorDark(accent);
+    const tel=resolverTelefono(t);
+    return `<div style="display:flex;align-items:stretch;margin-bottom:16px;border-radius:16px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.12);break-inside:avoid;border:1px solid #ede8e4">
+      <div style="background:${accent};color:${accentDark};min-width:120px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;padding:16px">${t.hora||'—'}</div>
+      <div style="flex:1;background:#fff;padding:18px 22px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="font-size:25px;font-weight:800;color:#2a1a16">${t.cliente}${tel?` <span style="font-size:14px;font-weight:400;color:#a89890">· ${tel}</span>`:''}</div>
+          <div style="font-size:27px;font-weight:800;color:#b8877a">$${totalMostrar.toLocaleString('es-AR')}</div>
+        </div>
+        <div style="margin-top:10px">${zonasBadges}</div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${t.anticipo?`<span style="background:#2d7a4a;color:#fff;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px">✓ SEÑA $${(t.anticipoMonto||0).toLocaleString('es-AR')}</span>`:`<span style="background:#c0392b;color:#fff;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px">SIN SEÑA</span>`}
+          ${t.notas?`<span style="font-size:14px;color:#7a6a64;font-style:italic">📝 ${t.notas}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  cont.innerHTML=`<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px 28px">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;border-bottom:4px solid #b8877a;padding-bottom:16px">
+      <div style="width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#d4b896,#b8877a);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;flex-shrink:0">H</div>
+      <div>
+        <div style="font-size:32px;font-weight:800;color:#2a1a16;letter-spacing:1px">HALIME</div>
+        <div style="font-size:17px;color:#8a7a74;text-transform:capitalize">${diaSemana} ${fechaLabel} · ${lista.length} turno${lista.length!==1?'s':''}</div>
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+  window.print();
+}
+
 function renderClientes(){
   const buscar=document.getElementById('filtro-clientes-buscar').value.toLowerCase();
   const tbody=document.getElementById('tbody-clientes');
@@ -1387,6 +1456,7 @@ function calcCostos(){
   const precioHora=parseFloat(document.getElementById('co-precio-hora').value)||0;
   const redondeo=parseFloat(document.getElementById('co-redondeo').value)||0;
   const comida=parseFloat(document.getElementById('co-comida').value)||0;
+  const varios=parseFloat(document.getElementById('co-varios').value)||0;
   const precioPulso=parseFloat(document.getElementById('co-precio-pulso').value)||0;
   const dolar=parseFloat(document.getElementById('co-dolar').value)||0;
   let horasTrabajadas=0,horasStr='';
@@ -1499,12 +1569,22 @@ function initApp(){
   });
   setInterval(async()=>{
     try{
-      const[t,c]=await Promise.all([sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),sbGet('clientes','?select=*&order=nombre.asc')]);
+      const[t,c,tr,co]=await Promise.all([
+        sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),
+        sbGet('clientes','?select=*&order=nombre.asc'),
+        sbGet('tratamientos','?select=*&order=orden.asc'),
+        sbGet('costos','?select=*')
+      ]);
       if(Array.isArray(t)&&t.length)turnos=t.map(mapTurnoFromSB);
       if(Array.isArray(c)&&c.length)clientes=c.map(mapClienteFromSB);
+      if(Array.isArray(tr)&&tr.length)tratamientos=tr.map(mapTratFromSB);
+      if(Array.isArray(co)){costos={};co.forEach(d=>{costos[d.fecha]=mapCostoFromSB(d);});}
       renderClientes();
       const tabAgenda=document.getElementById('tab-agenda');if(tabAgenda&&tabAgenda.classList.contains('active')){renderAgenda();renderStats();}
       const tabGrilla=document.getElementById('tab-grilla');if(tabGrilla&&tabGrilla.classList.contains('active')){renderGrilla();}
+      const tabZonas=document.getElementById('tab-zonas');if(tabZonas&&tabZonas.classList.contains('active')){renderTratamientos();}
+      const tabNuevo=document.getElementById('tab-nuevo');if(tabNuevo&&tabNuevo.classList.contains('active')){renderSiglasButtons();}
+      const tabCostos=document.getElementById('tab-costos');if(tabCostos&&tabCostos.classList.contains('active')){const fc=document.getElementById('co-fecha')?.value;if(fc){cargarCostosDia(fc);calcCostos();}}
       if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
     }catch(e){console.error('Auto-refresh error:',e);}
   },30000);
