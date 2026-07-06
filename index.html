@@ -1600,9 +1600,10 @@ function initApp(){
       renderClientes();
       const tabAgenda=document.getElementById('tab-agenda');if(tabAgenda&&tabAgenda.classList.contains('active')){renderAgenda();renderStats();}
       const tabGrilla=document.getElementById('tab-grilla');if(tabGrilla&&tabGrilla.classList.contains('active')){renderGrilla();}
-      const tabZonas=document.getElementById('tab-zonas');if(tabZonas&&tabZonas.classList.contains('active')){renderTratamientos();}
       const tabNuevo=document.getElementById('tab-nuevo');if(tabNuevo&&tabNuevo.classList.contains('active')){renderSiglasButtons();}
-      const tabCostos=document.getElementById('tab-costos');if(tabCostos&&tabCostos.classList.contains('active')){const fc=document.getElementById('co-fecha')?.value;if(fc){cargarCostosDia(fc);calcCostos();}}
+      // Nota: zonas y costos NO se re-pintan automáticamente mientras están activas,
+      // para no pisar ediciones sin guardar. Los datos igual se actualizan en segundo plano
+      // y se ven correctos la próxima vez que se abre esa pestaña.
       if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
     }catch(e){console.error('Auto-refresh error:',e);}
   },30000);
