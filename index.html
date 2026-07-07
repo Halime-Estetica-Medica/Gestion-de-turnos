@@ -293,6 +293,17 @@ tr:hover td{background:#fdf9f7}
       </div>
       <div id="agenda-container"></div>
     </div>
+    <div class="card" style="margin-top:1rem">
+      <div class="section-title">Backup (copia de seguridad local)</div>
+      <div style="font-size:13px;color:#a89890;margin-bottom:10px">Todo se guarda en este navegador. Descargá un backup de vez en cuando para no perder nada si se borra el caché o cambiás de dispositivo.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn-secondary" onclick="exportarBackup()" style="color:#2d7a4a;border-color:#c0e8ce">💾 Descargar backup</button>
+        <label class="btn-secondary" style="color:#1565c0;border-color:#bbdefb;cursor:pointer;display:inline-flex;align-items:center">
+          📂 Restaurar backup
+          <input type="file" accept="application/json" onchange="importarBackup(this)" style="display:none">
+        </label>
+      </div>
+    </div>
   </div>
 
   <!-- CLIENTES -->
@@ -540,101 +551,66 @@ const DEFAULT_TRATAMIENTOS = [
   {sigla:'PVH',nombre:'Pelvis Hombre',        precio:17000,color:'#00bcd4'},
 ];
 
-const SB_URL='https://nehrkxpxtopswpcpoyon.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5laHJreHB4dG9wc3dwY3BveW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjYwMDksImV4cCI6MjA5NjYwMjAwOX0.S6dYUcATeOpgMA-1uIibygecOVh5lXygv8yQO1556Uo';
-const SB_HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
-
-async function sbGet(table,params=''){const r=await fetch(SB_URL+'/rest/v1/'+table+params,{headers:SB_HEADERS});return r.json();}
-async function sbPost(table,body){const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify(body)});return r.ok;}
-async function sbDelete(table,params){const r=await fetch(SB_URL+'/rest/v1/'+table+params,{method:'DELETE',headers:SB_HEADERS});return r.ok;}
-async function sbUpsert(table,body){
-  try{
-    const r=await fetch(SB_URL+'/rest/v1/'+table,{method:'POST',headers:{...SB_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});
-    if(!r.ok){const txt=await r.text();console.error('sbUpsert error en '+table+':',r.status,txt);}
-    return r.ok;
-  }catch(e){console.error('sbUpsert exception en '+table+':',e);return false;}
-}
-
-function mapTurnoFromSB(r){return{id:r.id,cliente:r.cliente,telefono:r.telefono||'',fecha:r.fecha,hora:r.hora||'',siglas:r.siglas||'[]',notas:r.notas||'',anticipo:r.anticipo||false,anticipoMonto:r.anticipo_monto||0,promo:r.promo||false,promoPct:r.promo_pct||0,redondeo:r.redondeo||0,totalFinal:r.total_final||0,creado:r.creado||''};}
-function mapClienteFromSB(r){return{nombre:r.nombre,telefono:r.telefono||'',mail:r.mail||''};}
-function mapTratFromSB(r){return{sigla:r.sigla,nombre:r.nombre,precio:r.precio||0,color:r.color||'#f5ede9'};}
-function mapCostoFromSB(r){return{entrada:r.entrada||'',salida:r.salida||'',precioHora:r.precio_hora||0,redondeo:r.redondeo||0,comida:r.comida||0,varios:r.varios||0,pulsosInicio:r.pulsos_inicio||0,pulsosCierre:r.pulsos_cierre||0,precioPulso:r.precio_pulso||0,dolar:r.dolar||0};}
-
-async function cargarDesdeSB(){
-  try{
-    const [t,c,tr,co]=await Promise.all([
-      sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),
-      sbGet('clientes','?select=*&order=nombre.asc'),
-      sbGet('tratamientos','?select=*&order=orden.asc'),
-      sbGet('costos','?select=*')
-    ]);
-    if(Array.isArray(t) && t.length) turnos=t.map(mapTurnoFromSB);
-    if(Array.isArray(c) && c.length) clientes=c.map(mapClienteFromSB);
-    if(Array.isArray(tr)&&tr.length){tratamientos=tr.map(mapTratFromSB);}
-    else if(Array.isArray(tr)&&tr.length===0){await guardarTratamientosSB();}
-    if(Array.isArray(co)) co.forEach(d=>{costos[d.fecha]=mapCostoFromSB(d);});
-  }catch(e){console.error('SB error:',e);}
-}
-
-async function guardarTurnoSB(t){return sbUpsert('turnos',{id:t.id,cliente:t.cliente,telefono:t.telefono||'',fecha:t.fecha,hora:t.hora||'',siglas:t.siglas,notas:t.notas||'',anticipo:t.anticipo||false,anticipo_monto:t.anticipoMonto||0,promo:t.promo||false,promo_pct:t.promoPct||0,redondeo:t.redondeo||0,total_final:t.totalFinal||0,creado:t.creado||''});}
-async function eliminarTurnoSB(id){return sbDelete('turnos','?id=eq.'+id);}
-async function guardarClienteSB(c){
-  const body={telefono:c.telefono||'',mail:c.mail||''};
-  try{
-    const rPatch=await fetch(SB_URL+'/rest/v1/clientes?nombre=eq.'+encodeURIComponent(c.nombre),{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=representation'},body:JSON.stringify(body)});
-    if(!rPatch.ok){const txt=await rPatch.text();console.error('PATCH cliente failed:',rPatch.status,txt);return false;}
-    const actualizados=await rPatch.json();
-    if(Array.isArray(actualizados)&&actualizados.length>0)return true;
-    const rInsert=await fetch(SB_URL+'/rest/v1/clientes',{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({nombre:c.nombre,...body})});
-    if(!rInsert.ok){const txt=await rInsert.text();console.error('INSERT cliente (fallback) failed:',rInsert.status,txt);}
-    return rInsert.ok;
-  }catch(e){console.error('guardarClienteSB exception:',e);return false;}
-}
-async function eliminarClienteSB(nombre){return sbDelete('clientes','?nombre=eq.'+encodeURIComponent(nombre));}
-async function eliminarTratamientoSB(sigla){
-  try{const r=await fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(sigla),{method:'DELETE',headers:SB_HEADERS});return r.ok;}
-  catch(e){console.error('Error eliminando zona:',e);return false;}
-}
-async function guardarTratamientosSB(){
-  const results=await Promise.all(tratamientos.map(async(t,i)=>{
-    const body={nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden:i};
-    try{
-      const rPatch=await fetch(SB_URL+'/rest/v1/tratamientos?sigla=eq.'+encodeURIComponent(t.sigla),{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=representation'},body:JSON.stringify(body)});
-      if(!rPatch.ok){const txt=await rPatch.text();console.error('PATCH failed para',t.sigla,rPatch.status,txt);return false;}
-      const actualizados=await rPatch.json();
-      if(Array.isArray(actualizados)&&actualizados.length>0)return true;
-      // No existía ninguna fila con esa sigla: insertarla
-      const rInsert=await fetch(SB_URL+'/rest/v1/tratamientos',{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({sigla:t.sigla,...body})});
-      if(!rInsert.ok){const txt=await rInsert.text();console.error('INSERT (fallback) failed para',t.sigla,rInsert.status,txt);}
-      return rInsert.ok;
-    }catch(e){console.error('guardarTratamientosSB exception para',t.sigla,e);return false;}
-  }));
-  return results.every(Boolean);
-}
-async function insertarTratamientoSB(t,orden){
-  const r=await fetch(SB_URL+'/rest/v1/tratamientos',{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({sigla:t.sigla,nombre:t.nombre,precio:t.precio,color:t.color||'#f5ede9',orden})});
-  if(!r.ok){const txt=await r.text();console.error('INSERT failed para',t.sigla,r.status,txt);}
-  return r.ok;
-}
-async function guardarCostosSB(fecha,d){
-  const body={entrada:d.entrada||'',salida:d.salida||'',precio_hora:d.precioHora||0,redondeo:d.redondeo||0,comida:d.comida||0,varios:d.varios||0,pulsos_inicio:d.pulsosInicio||0,pulsos_cierre:d.pulsosCierre||0,precio_pulso:d.precioPulso||0,dolar:d.dolar||0};
-  try{
-    const rPatch=await fetch(SB_URL+'/rest/v1/costos?fecha=eq.'+encodeURIComponent(fecha),{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=representation'},body:JSON.stringify(body)});
-    if(!rPatch.ok){const txt=await rPatch.text();console.error('PATCH costos failed:',rPatch.status,txt);return false;}
-    const actualizados=await rPatch.json();
-    if(Array.isArray(actualizados)&&actualizados.length>0)return true;
-    const rInsert=await fetch(SB_URL+'/rest/v1/costos',{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({fecha,...body})});
-    if(!rInsert.ok){const txt=await rInsert.text();console.error('INSERT costos (fallback) failed:',rInsert.status,txt);}
-    return rInsert.ok;
-  }catch(e){console.error('guardarCostosSB exception:',e);return false;}
-}
-
 let tratamientos=JSON.parse(localStorage.getItem('halime_tratamientos')||'null')||DEFAULT_TRATAMIENTOS;
 let turnos=JSON.parse(localStorage.getItem('halime_turnos')||'[]');
 let clientes=JSON.parse(localStorage.getItem('halime_clientes')||'[]');
+let costos=JSON.parse(localStorage.getItem('halime_costos')||'{}');
 
-function guardar(){}
-function guardarCostosData(){}
+// Persistencia 100% local (localStorage). No depende de ningún servidor.
+function guardar(){
+  localStorage.setItem('halime_turnos',JSON.stringify(turnos));
+  localStorage.setItem('halime_clientes',JSON.stringify(clientes));
+  localStorage.setItem('halime_tratamientos',JSON.stringify(tratamientos));
+}
+function guardarCostosData(){
+  localStorage.setItem('halime_costos',JSON.stringify(costos));
+}
+
+// Backup manual: exportar todo a un archivo JSON descargable
+function exportarBackup(){
+  const backup={
+    version:1,
+    exportado:new Date().toISOString(),
+    turnos,clientes,tratamientos,costos
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const fecha=hoy();
+  a.href=url;
+  a.download='halime_backup_'+fecha+'.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showAlert('✓ Backup descargado');
+}
+
+// Backup manual: importar un archivo JSON previamente exportado
+function importarBackup(input){
+  const file=input.files&&input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!confirm('Esto va a REEMPLAZAR todos los datos actuales de la app (turnos, clientes, zonas y costos) por los del backup. ¿Continuar?')){input.value='';return;}
+      if(Array.isArray(data.turnos))turnos=data.turnos;
+      if(Array.isArray(data.clientes))clientes=data.clientes;
+      if(Array.isArray(data.tratamientos))tratamientos=data.tratamientos;
+      if(data.costos&&typeof data.costos==='object')costos=data.costos;
+      guardar();guardarCostosData();
+      renderTratamientos();renderSiglasButtons();renderClientes();renderAgenda();renderStats();renderGrilla();
+      if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+      showAlert('✓ Backup importado correctamente');
+    }catch(err){
+      console.error('Error importando backup:',err);
+      showAlert('El archivo no es un backup válido.','error');
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
 
 function showTab(t,btn){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
@@ -839,10 +815,8 @@ function guardarTurno(){
   const totalConPromo=Math.round((promoCheck?total*(1-promoPct/100):total)+redondeo);
   const turno={id:Date.now(),cliente,telefono,fecha,hora,siglas:siglasSerialized(siglasArr),notas:document.getElementById('f-notas').value.trim(),promo:promoCheck,promoPct,redondeo,totalFinal:totalConPromo,anticipo:anticipoCheck,anticipoMonto,creado:new Date().toISOString()};
   turnos.push(turno);
-  guardarTurnoSB(turno).then(ok=>{
-    if(ok)showAlert(`✓ Turno de ${cliente} guardado — $${totalConPromo.toLocaleString('es-AR')}`);
-    else showAlert('Error al guardar el turno.','error');
-  });
+  guardar();
+  showAlert(`✓ Turno de ${cliente} guardado — $${totalConPromo.toLocaleString('es-AR')}`);
   limpiarFormulario();
 }
 
@@ -868,7 +842,8 @@ function toggleNoVino(id,noVino){
   const t=turnos.find(x=>x.id===id);
   if(!t)return;
   t.noVino=noVino;
-  fetch(SB_URL+'/rest/v1/turnos?id=eq.'+id,{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=minimal'},body:JSON.stringify({notas:noVino?'[NO VINO] '+(t.notas||'').replace('[NO VINO] ',''):(t.notas||'').replace('[NO VINO] ','')})});
+  t.notas=noVino?'[NO VINO] '+(t.notas||'').replace('[NO VINO] ',''):(t.notas||'').replace('[NO VINO] ','');
+  guardar();
   renderAgenda();renderStats();
 }
 
@@ -935,7 +910,7 @@ function turnoCard(t){
 function eliminarTurno(id){
   if(!confirm('¿Eliminar este turno?'))return;
   turnos=turnos.filter(t=>t.id!==id);
-  eliminarTurnoSB(id);
+  guardar();
   renderAgenda();renderStats();
 }
 
@@ -1065,10 +1040,9 @@ function guardarEdicion(){
   const anticipoMonto2=document.getElementById('em-anticipo-check').checked?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0;
   const totalFinal=promo?Math.round(total*(1-promoPct/100))+redondeo-anticipoMonto2:total+redondeo-anticipoMonto2;
   turnos[idx]={...turnos[idx],cliente,telefono:cDB?cDB.telefono||'':turnos[idx].telefono||'',fecha,hora,siglas,notas:document.getElementById('em-notas').value.trim(),anticipo:document.getElementById('em-anticipo-check').checked,anticipoMonto:document.getElementById('em-anticipo-check').checked?(parseFloat(document.getElementById('em-anticipo-monto').value)||0):0,promo,promoPct,redondeo,totalFinal};
-  guardarTurnoSB(turnos[idx]).then(()=>{
-    document.getElementById('edit-modal').style.display='none';
-    editId=null;renderAgenda();renderStats();showAlert('✓ Turno actualizado');
-  });
+  guardar();
+  document.getElementById('edit-modal').style.display='none';
+  editId=null;renderAgenda();renderStats();showAlert('✓ Turno actualizado');
 }
 
 function abrirWA(id){
@@ -1316,7 +1290,7 @@ function agregarCliente(){
   if(clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){showAlert('Esa clienta ya existe.','error');return;}
   const nuevoCliente={nombre,telefono,mail};
   clientes.push(nuevoCliente);
-  guardarClienteSB(nuevoCliente);
+  guardar();
   renderClientes();
   document.getElementById('c-nombre').value='';
   document.getElementById('c-telefono').value='';
@@ -1327,7 +1301,7 @@ function agregarCliente(){
 function eliminarCliente(nombre){
   if(!confirm(`¿Eliminar a ${nombre} de la lista?`))return;
   clientes=clientes.filter(c=>c.nombre!==nombre);
-  eliminarClienteSB(nombre);renderClientes();
+  guardar();renderClientes();
 }
 
 const PRESETS=[
@@ -1357,7 +1331,7 @@ function abrirColorPopup(i,btn){
   popup.style.top=top+'px';popup.style.left=left+'px';popup.classList.add('open');
 }
 
-function elegirColorPopup(hex){if(popupIdx===null)return;tratamientos[popupIdx].color=hex;guardarTratamientosSB();renderTratamientos();renderSiglasButtons();cerrarColorPopup();}
+function elegirColorPopup(hex){if(popupIdx===null)return;tratamientos[popupIdx].color=hex;guardar();renderTratamientos();renderSiglasButtons();cerrarColorPopup();}
 function cerrarColorPopup(){document.getElementById('color-popup').classList.remove('open');popupIdx=null;}
 document.addEventListener('click',function(e){const popup=document.getElementById('color-popup');if(!popup.contains(e.target)&&!e.target.closest('.color-trigger')){cerrarColorPopup();}});
 
@@ -1396,7 +1370,7 @@ function moverZona(i,dir){
   const newIdx=i+dir;
   if(newIdx<0||newIdx>=tratamientos.length)return;
   const tmp=tratamientos[i];tratamientos[i]=tratamientos[newIdx];tratamientos[newIdx]=tmp;
-  guardarTratamientosSB().then(ok=>{if(ok)showAlert('✓ Orden guardado');});
+  guardar();showAlert('✓ Orden guardado');
   renderTratamientos();renderSiglasButtons();
 }
 
@@ -1405,7 +1379,7 @@ function dragStart(e,i){dragIdx=i;e.currentTarget.classList.add('dragging');e.da
 function dragEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('.trat-bloque').forEach(b=>b.classList.remove('drag-over'));}
 function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
 function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
-function dragDrop(e,targetIdx){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(dragIdx===null||dragIdx===targetIdx)return;const moved=tratamientos.splice(dragIdx,1)[0];tratamientos.splice(targetIdx,0,moved);dragIdx=null;guardarTratamientosSB();renderTratamientos();renderSiglasButtons();}
+function dragDrop(e,targetIdx){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(dragIdx===null||dragIdx===targetIdx)return;const moved=tratamientos.splice(dragIdx,1)[0];tratamientos.splice(targetIdx,0,moved);dragIdx=null;guardar();renderTratamientos();renderSiglasButtons();}
 
 function editarBloque(i){const el=document.querySelector(`.trat-bloque[data-idx="${i}"]`);if(!el)return;el.classList.add('editing');el.setAttribute('draggable','false');setTimeout(()=>document.getElementById('edit-nombre-'+i)?.focus(),50);}
 function cancelarEdicion(i){const el=document.querySelector(`.trat-bloque[data-idx="${i}"]`);if(!el)return;el.classList.remove('editing');el.setAttribute('draggable','true');}
@@ -1417,7 +1391,7 @@ function guardarBloque(i){
   const dup=tratamientos.find((t,idx)=>t.sigla===sigla&&idx!==i);
   if(dup){showAlert('Esa sigla ya existe.','error');return;}
   tratamientos[i]={...tratamientos[i],sigla,nombre,precio};
-  guardarTratamientosSB().then(()=>showAlert(`✓ ${sigla} actualizado`));
+  guardar();showAlert(`✓ ${sigla} actualizado`);
   renderTratamientos();renderSiglasButtons();
 }
 
@@ -1430,23 +1404,21 @@ function agregarTratamiento(){
   if(tratamientos.find(t=>t.sigla===sigla)){showAlert('Esa sigla ya existe.','error');return;}
   const nuevaTrat={sigla,nombre,precio,color};
   tratamientos.push(nuevaTrat);
-  insertarTratamientoSB(nuevaTrat,tratamientos.length-1);
+  guardar();
   renderTratamientos();renderSiglasButtons();
   document.getElementById('t-sigla').value='';document.getElementById('t-nombre').value='';document.getElementById('t-precio').value='';document.getElementById('t-color').value='#f5ede9';
   showAlert(`✓ "${sigla} — ${nombre}" agregado`);
 }
 
 function setColor(hex){document.getElementById('t-color').value=hex;}
-function cambiarColor(i,color){tratamientos[i].color=color;guardarTratamientosSB();renderTratamientos();renderSiglasButtons();}
+function cambiarColor(i,color){tratamientos[i].color=color;guardar();renderTratamientos();renderSiglasButtons();}
 function eliminarTratamiento(i){
   if(!confirm(`¿Eliminar "${tratamientos[i].sigla} — ${tratamientos[i].nombre}"?`))return;
   const siglaEliminada=tratamientos[i].sigla;
   tratamientos.splice(i,1);
-  eliminarTratamientoSB(siglaEliminada).then(()=>{guardarTratamientosSB();showAlert('Zona eliminada');});
+  guardar();showAlert('Zona eliminada');
   renderTratamientos();renderSiglasButtons();
 }
-
-let costos=JSON.parse(localStorage.getItem('halime_costos')||'{}');
 
 function initCostos(){
   document.getElementById('co-fecha').value=hoy();
@@ -1527,10 +1499,8 @@ function guardarCostos(){
   const fecha=document.getElementById('co-fecha').value;
   if(!fecha){showAlert('Elegí una fecha primero.','error');return;}
   costos[fecha]={entrada:document.getElementById('co-entrada').value,salida:document.getElementById('co-salida').value,precioHora:parseFloat(document.getElementById('co-precio-hora').value)||0,redondeo:parseFloat(document.getElementById('co-redondeo').value)||0,comida:parseFloat(document.getElementById('co-comida').value)||0,varios:parseFloat(document.getElementById('co-varios').value)||0,pulsosInicio:parseInt(document.getElementById('co-pulsos-inicio').value)||0,pulsosCierre:parseInt(document.getElementById('co-pulsos-cierre').value)||0,precioPulso:parseFloat(document.getElementById('co-precio-pulso').value)||0,dolar:parseFloat(document.getElementById('co-dolar').value)||0};
-  guardarCostosSB(fecha,costos[fecha]).then(ok=>{
-    if(ok)showAlert(`✓ Costos del ${fecha.split('-').reverse().join('/')} guardados`);
-    else showAlert('Error al guardar los costos. Revisá la consola (F12) para ver el detalle.','error');
-  });
+  guardarCostosData();
+  showAlert(`✓ Costos del ${fecha.split('-').reverse().join('/')} guardados`);
 }
 
 function limpiarCostos(){
@@ -1593,44 +1563,16 @@ function initApp(){
   const gf=document.getElementById('grilla-fecha');if(gf)gf.value=hoy();
   actualizarDisplayAnticipo();
   try{initCostos();}catch(e){console.error('initCostos error:',e);}
-  cargarDesdeSB().then(()=>{
-    renderTratamientos();
-    renderSiglasButtons();
-    renderClientes();
-    renderAgenda();
-    renderStats();
-    renderGrilla();
-    if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
-    // Cargar costos del día DESPUÉS de que lleguen los datos de SB
-    const fechaCostos = document.getElementById('co-fecha')?.value || hoy();
-    cargarCostosDia(fechaCostos);
-    calcCostos();
-  }).catch(e=>{
-    console.error('Error cargando datos:',e);
-    renderAgenda();renderStats();renderTratamientos();renderSiglasButtons();
-  });
-  setInterval(async()=>{
-    try{
-      const[t,c,tr,co]=await Promise.all([
-        sbGet('turnos','?select=*&order=fecha.asc,hora.asc'),
-        sbGet('clientes','?select=*&order=nombre.asc'),
-        sbGet('tratamientos','?select=*&order=orden.asc'),
-        sbGet('costos','?select=*')
-      ]);
-      if(Array.isArray(t)&&t.length)turnos=t.map(mapTurnoFromSB);
-      if(Array.isArray(c)&&c.length)clientes=c.map(mapClienteFromSB);
-      if(Array.isArray(tr)&&tr.length)tratamientos=tr.map(mapTratFromSB);
-      if(Array.isArray(co)){costos={};co.forEach(d=>{costos[d.fecha]=mapCostoFromSB(d);});}
-      renderClientes();
-      const tabAgenda=document.getElementById('tab-agenda');if(tabAgenda&&tabAgenda.classList.contains('active')){renderAgenda();renderStats();}
-      const tabGrilla=document.getElementById('tab-grilla');if(tabGrilla&&tabGrilla.classList.contains('active')){renderGrilla();}
-      const tabNuevo=document.getElementById('tab-nuevo');if(tabNuevo&&tabNuevo.classList.contains('active')){renderSiglasButtons();}
-      // Nota: zonas y costos NO se re-pintan automáticamente mientras están activas,
-      // para no pisar ediciones sin guardar. Los datos igual se actualizan en segundo plano
-      // y se ven correctos la próxima vez que se abre esa pestaña.
-      if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
-    }catch(e){console.error('Auto-refresh error:',e);}
-  },30000);
+  renderTratamientos();
+  renderSiglasButtons();
+  renderClientes();
+  renderAgenda();
+  renderStats();
+  renderGrilla();
+  if(typeof window.renderHoraSlots==='function')window.renderHoraSlots();
+  const fechaCostos=document.getElementById('co-fecha')?.value||hoy();
+  cargarCostosDia(fechaCostos);
+  calcCostos();
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initApp);}else{initApp();}
 </script>
