@@ -1101,7 +1101,6 @@ function exportarExcel(){
   const d=costos[fechaFiltro]||{};
   const pUsados=Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
   const R_HEADER=4,R_FIRST_TURNO=5,nTurnos=turnosDia.length,R_LAST_TURNO=R_FIRST_TURNO+nTurnos-1;
-  const R_PULSOS_HEADER=R_LAST_TURNO+3,R_PULSOS_DATA=R_PULSOS_HEADER+1,R_RESUMEN=R_PULSOS_DATA+3;
   const rows=[];
   rows.push(['Ficha Halime']);
   rows.push([fechaFiltro.split('-').reverse().join('/')]);
@@ -1120,61 +1119,77 @@ function exportarExcel(){
     rows.push([t.cliente,t.hora||'',zonasStr,t.noVino?0:total,t.noVino?'':(promoOff||''),t.noVino?'':(señaNeg||''),t.noVino?'':(diferencia||''),t.noVino?0:{f:`ROUND(D${rowNum}*(1-IF(E${rowNum}="",0,E${rowNum})/100)+IF(G${rowNum}="",0,G${rowNum})+IF(F${rowNum}="",0,F${rowNum}),2)`},(t.notas||'')+noVinoTag]);
   });
   rows.push([]);rows.push([]);
-  const pulsoRow=R_PULSOS_DATA;
+  const pulsoRow=rows.length+2; // fila real de datos de pulsos (después del header)
   rows.push(['Pulsos inicio','Pulsos fin','Pulsos consumidos','Precio pulso ($)','Costo pulsos']);
-  rows.push([d.pulsosInicio||0,d.pulsosCierre||0,{f:`B${pulsoRow}-A${pulsoRow}`},1.311,'',{f:`ROUND(C${pulsoRow}*D${pulsoRow},2)`}]);
+  rows.push([d.pulsosInicio||0,d.pulsosCierre||0,{f:`B${pulsoRow}-A${pulsoRow}`},1.311,{f:`ROUND(C${pulsoRow}*D${pulsoRow},2)`}]);
   rows.push([]);rows.push([]);
-  const totEfvoCol='H';
-  const sumTurnos=nTurnos>0?`SUM(${totEfvoCol}${R_FIRST_TURNO}:${totEfvoCol}${R_LAST_TURNO})`:'0';
-  const resRow=(offset)=>R_RESUMEN+offset;
   let hs=0;
   if(d.entrada&&d.salida){const[eh,em]=d.entrada.split(':').map(Number);const[sh,sm]=d.salida.split(':').map(Number);const min=(sh*60+sm)-(eh*60+em);if(min>0)hs=Math.round(min/60*100)/100;}
-  const R_TOTAL_COBRADO=resRow(1),R_OPERADORA=resRow(4),R_HS=resRow(5),R_PRECIO_HORA=resRow(6),R_REDONDEO=resRow(7),R_COMIDA=resRow(8),R_PULSOS_COSTO=resRow(9),R_NICO=resRow(10),R_TOTAL_COSTOS=resRow(12);
-  // Total señas
-  const totalSeñas = turnosDia.filter(t=>t.anticipo&&!t.noVino).reduce((s,t)=>s+(t.anticipoMonto||0),0);
-  const R_TOTAL_SEÑAS = resRow(2);
-  const R_INGRESOS    = resRow(3);
-
-  // Calcular todos los valores directo en JS
-  const totalEfectivo = turnosDia.filter(t=>!t.noVino).reduce((s,t)=>{
-    const{total}=calcularTurno(t.siglas);
-    const base = t.promo ? Math.round(total*(1-t.promoPct/100)) : total;
-    return s + base + (t.redondeo||0) - (t.anticipo?(t.anticipoMonto||0):0);
-  },0);
-  const costoOperadora = hs*(d.precioHora||0)+(d.redondeo||0);
-  const costoComida    = d.comida||0;
-  const costoVarios    = d.varios||0;
-  const pulsosUsados   = Math.max(0,(d.pulsosCierre||0)-(d.pulsosInicio||0));
-  const costoPulsos    = Math.round(pulsosUsados*1.311*100)/100;
-  const ingresos       = totalEfectivo + totalSeñas;
-  const nicoBase       = ingresos - costoOperadora - costoComida - costoVarios - costoPulsos;
-  const costoNico      = Math.round(nicoBase*0.1*100)/100;
-  const totalCostos    = costoOperadora + costoComida + costoVarios + costoPulsos + costoNico;
-  const gananciaNeta   = ingresos - totalCostos;
 
   rows.push(['RESUMEN DEL DÍA']);
-  rows.push(['Total efectivo','',totalEfectivo]);
-  rows.push(['Total señas','',totalSeñas]);
-  rows.push(['Ingresos totales','',ingresos]);
+  const R_RESUMEN_TITULO=rows.length;
+  const R_TOTAL_EFECTIVO=rows.length+1;
+  const R_TOTAL_SEÑAS_ROW=rows.length+2;
+  const R_INGRESOS_ROW=rows.length+3;
+  rows.push(['Total efectivo','',nTurnos>0?{f:`SUM(H${R_FIRST_TURNO}:H${R_LAST_TURNO})`}:0]);
+  rows.push(['Total señas','',nTurnos>0?{f:`-SUM(F${R_FIRST_TURNO}:F${R_LAST_TURNO})`}:0]);
+  rows.push(['Ingresos totales','',{f:`C${R_TOTAL_EFECTIVO}+C${R_TOTAL_SEÑAS_ROW}`}]);
   rows.push([]);
   rows.push(['COSTOS']);
-  rows.push(['Operadora','',-costoOperadora]);
+  const R_COSTOS_TITULO=rows.length;
+  const R_OPERADORA_REAL=rows.length+1;
+  const R_HORAS_ROW=rows.length+2;
+  const R_PRECIO_HORA_ROW=rows.length+3;
+  const R_REDONDEO_OP_ROW=rows.length+4;
+  const R_COMIDA_REAL=rows.length+5;
+  const R_VARIOS_REAL=rows.length+6;
+  const R_PULSOS_COSTO_REAL=rows.length+7;
+  const R_NICO_REAL=rows.length+8;
+  rows.push(['Operadora','',{f:`-(C${R_HORAS_ROW}*C${R_PRECIO_HORA_ROW}+C${R_REDONDEO_OP_ROW})`}]);
   rows.push(['  Horas trabajadas','',hs]);
   rows.push(['  Precio/hora','',d.precioHora||0]);
   rows.push(['  Redondeo','',d.redondeo||0]);
-  rows.push(['Comida','',-costoComida]);
-  rows.push(['Varios','',-costoVarios]);
-  rows.push(['Pulsos','',-costoPulsos]);
-  rows.push(['10% Nico','',-costoNico]);
+  rows.push(['Comida','',-(d.comida||0)]);
+  rows.push(['Varios','',-(d.varios||0)]);
+  rows.push(['Pulsos','',{f:`-E${pulsoRow}`}]);
+  rows.push(['10% Nico','',{f:`-ROUND((C${R_INGRESOS_ROW}+C${R_OPERADORA_REAL}+C${R_COMIDA_REAL}+C${R_VARIOS_REAL}+C${R_PULSOS_COSTO_REAL})*0.1,2)`}]);
   rows.push([]);
-  rows.push(['Total costos','',-totalCostos]);
+  const R_TOTAL_COSTOS_REAL=rows.length+1;
+  rows.push(['Total costos','',{f:`C${R_OPERADORA_REAL}+C${R_COMIDA_REAL}+C${R_VARIOS_REAL}+C${R_PULSOS_COSTO_REAL}+C${R_NICO_REAL}`}]);
   rows.push([]);
-  rows.push(['Ganancia neta','',gananciaNeta]);
+  const R_GANANCIA_REAL=rows.length+1;
+  rows.push(['Ganancia neta','',{f:`C${R_INGRESOS_ROW}+C${R_TOTAL_COSTOS_REAL}`}]);
   const wsFicha=XLSX.utils.aoa_to_sheet(rows);
   wsFicha['!cols']=[22,8,32,12,8,12,12,12,20].map(w=>({wch:w}));
-  // Red formatting for cost rows (column C = index 2)
-  const redStyle = {font:{color:{rgb:'FF0000'}}};
-  [R_OPERADORA, R_COMIDA, R_PULSOS_COSTO, R_NICO, R_TOTAL_COSTOS].forEach(r=>{
+
+  // --- Estilos de color ---
+  const NUM_COLS=9;
+  const colLetra=(i)=>XLSX.utils.encode_col(i);
+  function pintarFila(fila,bg,color,bold,cols){
+    for(let c=0;c<cols;c++){
+      const ref=colLetra(c)+fila;
+      if(!wsFicha[ref])wsFicha[ref]={t:'s',v:''};
+      wsFicha[ref].s={fill:{fgColor:{rgb:bg}},font:{color:{rgb:color},bold:bold,sz:c===0?12:11}};
+    }
+  }
+  // Título principal "Ficha Halime"
+  pintarFila(1,'B8877A','FFFFFF',true,NUM_COLS);
+  // Fecha
+  pintarFila(2,'F5EDE9','5A3800',true,NUM_COLS);
+  // Encabezado de la tabla de turnos
+  pintarFila(R_HEADER,'2A1A16','FFFFFF',true,NUM_COLS);
+  // Encabezado de pulsos
+  pintarFila(pulsoRow-1,'E3F2FD','1565C0',true,5);
+  // Títulos de resumen y costos
+  pintarFila(R_RESUMEN_TITULO,'2D7A4A','FFFFFF',true,3);
+  pintarFila(R_COSTOS_TITULO,'C0392B','FFFFFF',true,3);
+  // Total costos y ganancia neta destacados
+  pintarFila(R_TOTAL_COSTOS_REAL,'FDF0EF','C0392B',true,3);
+  pintarFila(R_GANANCIA_REAL,'EDF7F0','2D7A4A',true,3);
+
+  // Rojo para las líneas de costo individuales (columna C)
+  const redStyle = {font:{color:{rgb:'C0392B'}}};
+  [R_OPERADORA_REAL, R_COMIDA_REAL, R_VARIOS_REAL, R_PULSOS_COSTO_REAL, R_NICO_REAL, R_TOTAL_COSTOS_REAL].forEach(r=>{
     const cellRef = 'C'+r;
     if(wsFicha[cellRef]) wsFicha[cellRef].s = redStyle;
   });
